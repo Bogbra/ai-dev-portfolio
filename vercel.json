@@ -1,0 +1,5 @@
+{
+  "buildCommand": "turbo run build --filter=@ai/web",
+  "outputDirectory": ".next",
+  "installCommand": "pnpm install"
+}

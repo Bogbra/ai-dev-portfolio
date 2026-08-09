@@ -1,0 +1,7 @@
+name,email,department,role,company,notes
+John Smith,john.smith@example.com,Product,Product Manager,Acme Corp,Working on Q3 roadmap
+Sarah Johnson,sarah.johnson@example.com,HR,Head of People,Acme Corp,Handles onboarding and benefits
+Maria Garcia,maria.garcia@example.com,Engineering,Senior Engineer,Acme Corp,Backend infrastructure lead
+John Doe,john.doe@example.com,Research,Research Lead,Acme Corp,AI/ML projects
+Lisa Chen,lisa.chen@example.com,Design,Design Lead,Acme Corp,Design systems and accessibility
+Tom Weber,tom.weber@example.com,Sales,Account Executive,Acme Corp,Enterprise accounts

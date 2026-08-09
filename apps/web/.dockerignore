@@ -1,0 +1,11 @@
+# apps/web — used when building with apps/web as the build context directly.
+# (In practice the monorepo root .dockerignore applies because the context is .)
+
+node_modules/
+.next/
+*.tsbuildinfo
+.env
+.env.*
+!.env.example
+coverage/
+.DS_Store

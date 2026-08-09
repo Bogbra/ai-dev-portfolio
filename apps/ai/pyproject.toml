@@ -1,0 +1,38 @@
+[project]
+name = "ai"
+version = "0.1.0"
+description = "FastAPI AI backend — CS01 workflow agent, CS02 multi-agent post, CS03 RAG assistant, voice agent, SEO strategy lab"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.138.1",
+    "httpx>=0.28.1",
+    "langgraph>=1.2.6",
+    "mcp>=2.0.0",
+    "openai>=2.44.0",
+    "openpyxl>=3.1.5",
+    "pydantic>=2.13.4",
+    "pydantic-settings>=2.14.2",
+    "pypdf>=6.14.2",
+    "python-dotenv>=1.2.2",
+    "slowapi>=0.1.10",
+    "sqlite-vec>=0.1.9",
+    "uvicorn[standard]>=0.49.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3",
+    "ruff>=0.9",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I"]
+ignore = ["E501"]
