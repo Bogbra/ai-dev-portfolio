@@ -62,7 +62,7 @@ logger = logging.getLogger(__name__)
 
 mcp_server = MCPServer(
     name="ai-systems-showcase",
-    title="AI Engineering Portfolio",
+    title="AI Systems Showcase",
     version="1.1.0",
     instructions=(
         "Explore portfolio architecture through read-only resources "

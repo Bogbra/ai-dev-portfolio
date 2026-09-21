@@ -1,4 +1,4 @@
-# Agentic AI Engineering Portfolio
+# AI Systems Showcase
 
 This is not a static portfolio. It is a deployed fullstack agentic AI application — three multi-step AI workflows and three interactive labs (voice, SEO strategy, and a real MCP protocol demo), backed by real APIs and running on Vercel and Railway.
 
