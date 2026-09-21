@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { runMultiAgentPost } from '@/lib/api';
+import { isSafeExternalUrl } from '@/lib/url';
 import type { MultiAgentPostResult } from '@ai/types';
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
@@ -577,7 +578,7 @@ export function MultiAgentPostWorkflow() {
                     <div className="mt-3 pt-3 border-t border-border space-y-1">
                       {currentResult.researchContext.sources.map((s, i) => (
                         <p key={i} className="font-mono text-sm text-subtle">
-                          {s.url ? (
+                          {isSafeExternalUrl(s.url) ? (
                             <a
                               href={s.url}
                               target="_blank"

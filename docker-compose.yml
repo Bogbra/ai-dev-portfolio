@@ -51,10 +51,14 @@ services:
       PORT: "3001"
       # Allow requests from the browser (host-side localhost).
       ALLOWED_ORIGINS: "http://localhost:3000"
-      # Contact form defaults — safe to leave as-is for local demo.
-      ENABLE_EMAIL_SENDING: "false"
-      MAIL_FROM: "portfolio@example.com"
-      MAIL_TO: "owner@example.com"
+      # Contact form defaults — safe to leave as-is for local demo. Interpolated
+      # (not hardcoded) so a value set in .env actually takes effect: Compose
+      # applies `environment:` after `env_file:`, so a bare "false" here would
+      # silently override ENABLE_EMAIL_SENDING=true from .env regardless of
+      # what the file says.
+      ENABLE_EMAIL_SENDING: "${ENABLE_EMAIL_SENDING:-false}"
+      MAIL_FROM: "${MAIL_FROM:-portfolio@example.com}"
+      MAIL_TO: "${MAIL_TO:-owner@example.com}"
       # RESEND_API_KEY — set in .env to enable live email sending.
     env_file:
       - path: .env

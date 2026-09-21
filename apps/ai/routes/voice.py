@@ -30,6 +30,21 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 limiter = Limiter(key_func=get_client_ip)
 
+
+def _resolve_voice_api_key() -> Optional[str]:
+    """VOICE_OPENAI_API_KEY if set; otherwise OPENAI_API_KEY only when it
+    actually targets OpenAI directly. OPENAI_API_KEY may be scoped to a
+    third-party proxy via OPENAI_BASE_URL for CS01/CS02/CS03 — Whisper/TTS
+    calls always go to api.openai.com (see below), so falling back to a
+    proxy-scoped key here would send it to a host it was never issued for.
+    """
+    if settings.VOICE_OPENAI_API_KEY:
+        return settings.VOICE_OPENAI_API_KEY
+    base_url = (settings.OPENAI_BASE_URL or "").strip()
+    if settings.OPENAI_API_KEY and (not base_url or "api.openai.com" in base_url):
+        return settings.OPENAI_API_KEY
+    return None
+
 # ─── Portfolio context ─────────────────────────────────────────────────────────
 
 _PORTFOLIO_CONTEXT = """
@@ -264,11 +279,11 @@ async def _generate_response(
 
 @router.get("/voice/status")
 async def voice_status() -> JSONResponse:
-    if not (settings.VOICE_OPENAI_API_KEY or settings.OPENAI_API_KEY):
+    if not _resolve_voice_api_key():
         return JSONResponse(
             VoiceStatusResponse(
                 available=False,
-                reason="OPENAI_API_KEY is not configured.",
+                reason="No API key configured for direct OpenAI access (VOICE_OPENAI_API_KEY, or OPENAI_API_KEY when OPENAI_BASE_URL is unset).",
             ).model_dump(),
             status_code=200,
         )
@@ -284,7 +299,7 @@ MAX_AUDIO_BYTES = 5 * 1024 * 1024  # 5 MB
 @limiter.limit(f"{settings.VOICE_MAX_REQUESTS_PER_HOUR}/hour")
 @limiter.limit(f"{settings.VOICE_MAX_REQUESTS_PER_DAY}/day")
 async def voice_agent(request: Request) -> JSONResponse:
-    if not (settings.VOICE_OPENAI_API_KEY or settings.OPENAI_API_KEY):
+    if not _resolve_voice_api_key():
         return JSONResponse(
             {
                 "message": "Voice agent is not available because speech credentials are not configured."
@@ -327,7 +342,10 @@ async def voice_agent(request: Request) -> JSONResponse:
     # Voice uses VOICE_OPENAI_API_KEY with the real OpenAI API (no proxy) because
     # Whisper and TTS endpoints are not available through proxy providers.
     # base_url is set explicitly to avoid inheriting OPENAI_BASE_URL from env.
-    voice_api_key = settings.VOICE_OPENAI_API_KEY or settings.OPENAI_API_KEY
+    # _resolve_voice_api_key never falls back to a proxy-scoped OPENAI_API_KEY
+    # (see its docstring) — the guard above already returned 503 if neither
+    # key is usable, so this is never None here.
+    voice_api_key = _resolve_voice_api_key()
     client = make_openai_client(voice_api_key, "https://api.openai.com/v1", voice=True)
 
     t_start = time.monotonic()

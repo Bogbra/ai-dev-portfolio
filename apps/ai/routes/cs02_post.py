@@ -261,6 +261,22 @@ def _parse_tool_output(model_cls: type[_ToolOutputT], args_json: str) -> _ToolOu
 
 # ─── Tavily research ──────────────────────────────────────────────────────────
 
+_ALLOWED_URL_SCHEMES = ("http://", "https://")
+
+
+def _safe_source_url(url: object) -> Optional[str]:
+    """Tavily-supplied URLs are rendered as an <a href> on the frontend
+    (React does not sanitise href — a javascript: URL would execute on
+    click). Only http(s) survives; anything else is dropped rather than
+    rewritten, since a malformed/unexpected scheme isn't a link worth
+    keeping either way.
+    """
+    if not isinstance(url, str):
+        return None
+    if url.strip().lower().startswith(_ALLOWED_URL_SCHEMES):
+        return url
+    return None
+
 
 async def _fetch_research_context(api_key: str, topic: str) -> dict:
     import httpx
@@ -297,7 +313,11 @@ async def _fetch_research_context(api_key: str, topic: str) -> dict:
                     if point not in context_points:
                         context_points.append(point)
                     sources.append(
-                        {"title": r.get("title", ""), "url": r.get("url"), "snippet": content[:200]}
+                        {
+                            "title": r.get("title", ""),
+                            "url": _safe_source_url(r.get("url")),
+                            "snippet": content[:200],
+                        }
                     )
             context_points = context_points[:3]
             return {

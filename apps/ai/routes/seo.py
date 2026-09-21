@@ -67,7 +67,10 @@ _GERMAN_CHARS = re.compile(r"[äöüÄÖÜß]")
 
 def _is_german_market(market: str) -> bool:
     norm = market.lower().strip()
-    return any(kw in norm for kw in _GERMAN_KEYWORDS)
+    # Word-boundary match — plain substring matching let short keywords like
+    # "de" false-positive on unrelated markets that merely contain those
+    # letters (e.g. "Denmark", "Sweden").
+    return any(re.search(rf"\b{re.escape(kw)}\b", norm) for kw in _GERMAN_KEYWORDS)
 
 
 def _has_german_chars(text: str) -> bool:
@@ -1418,11 +1421,11 @@ def _build_mock_en(topic: str, audience: str, goal: str) -> dict:
                 "focus": "Expand reach, add lead magnets, and optimise conversion paths",
                 "items": [
                     f"Publish the comprehensive '{t} for businesses' pillar page",
-                    "Set up retargeting audiences based on Phase 1 page visitors",
+                    "Create a comparison/lead-magnet page and connect it to the highest-intent cluster through internal links and contextual CTAs",
                     "Build email sequence for checklist downloads",
                     "Repurpose top Phase 2 content as short videos and social proof snippets",
                 ],
-                "rationale": "After the foundation is live, conversion optimisation and retargeting compound the value of existing traffic.",
+                "rationale": "After the foundation is live, conversion optimisation and internal-link-driven discovery compound the value of existing organic traffic.",
             },
         ],
         "warnings": ["Running in mock mode — set OPENAI_API_KEY for live AI analysis"],

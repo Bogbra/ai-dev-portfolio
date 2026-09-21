@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { callMcpTool } from '@/lib/api';
 import { useLang } from '@/lib/i18n';
+import { isSafeExternalUrl } from '@/lib/url';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 // Mirrors apps/ai/schemas/mcp.py — this lab talks to the MCP server directly,
@@ -269,7 +270,7 @@ export function McpLab() {
                     key={i}
                     className="font-mono text-sm text-muted border border-border/50 rounded-sm px-3 py-2"
                   >
-                    {source.url ? (
+                    {isSafeExternalUrl(source.url) ? (
                       <a
                         href={source.url}
                         target="_blank"
