@@ -15,7 +15,9 @@ def _stub_step1(*args, **kwargs) -> dict:
     return {
         "summary": "A business summary.",
         "extracted_business_context": {},
-        "keyword_candidates": [{"term": "workflow automation", "type": "seed", "intent": "informational"}],
+        "keyword_candidates": [
+            {"term": "workflow automation", "type": "seed", "intent": "informational"}
+        ],
         "intent_clusters": [],
     }
 

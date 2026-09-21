@@ -45,6 +45,7 @@ def _resolve_voice_api_key() -> Optional[str]:
         return settings.OPENAI_API_KEY
     return None
 
+
 # ─── Portfolio context ─────────────────────────────────────────────────────────
 
 _PORTFOLIO_CONTEXT = """

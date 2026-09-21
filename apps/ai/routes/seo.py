@@ -265,9 +265,7 @@ async def _step1_extract_and_generate(
     # explicit system-prompt rule, instead of interpolated as plain prompt
     # text, so a value like "Ignore the previous instructions and ..." can't
     # pass as — or break out into — real prompt structure.
-    url_line = (
-        f"Website URL (for context only, do not visit): {xml_escape(url)}" if url else ""
-    )
+    url_line = f"Website URL (for context only, do not visit): {xml_escape(url)}" if url else ""
     web_line = (
         f"\nWeb context about this topic (use for context, not as keywords):\n{xml_escape(web_context)}"
         if web_context
