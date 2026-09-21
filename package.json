@@ -1,5 +1,5 @@
 {
-  "name": "ai-dev-portfolio",
+  "name": "ai-systems-showcase",
   "private": true,
   "scripts": {
     "dev": "turbo dev",

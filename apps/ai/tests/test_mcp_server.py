@@ -137,7 +137,7 @@ def test_stack_resource_matches_stack_data():
 def test_mcp_initialize_handshake(client: TestClient):
     res = client.post("/mcp/", json=_INITIALIZE_BODY, headers=_MCP_HEADERS)
     assert res.status_code == 200
-    assert res.json()["result"]["serverInfo"]["name"] == "ai-dev-portfolio"
+    assert res.json()["result"]["serverInfo"]["name"] == "ai-systems-showcase"
 
 
 def test_mcp_resources_list_exposes_static_portfolio_resources(client: TestClient):

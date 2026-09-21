@@ -61,7 +61,7 @@ from settings import settings
 logger = logging.getLogger(__name__)
 
 mcp_server = MCPServer(
-    name="ai-dev-portfolio",
+    name="ai-systems-showcase",
     title="AI Engineering Portfolio",
     version="1.1.0",
     instructions=(

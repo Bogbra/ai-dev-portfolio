@@ -124,7 +124,7 @@ export function Nav() {
 
             {/* GitHub link — desktop only */}
             <a
-              href="https://github.com/Bogbra/ai-dev-portfolio"
+              href="https://github.com/Bogbra/ai-systems-showcase"
               target="_blank"
               rel="noopener noreferrer"
               aria-label="View source on GitHub"
@@ -211,7 +211,7 @@ export function Nav() {
                 ))}
                 <li>
                   <a
-                    href="https://github.com/Bogbra/ai-dev-portfolio"
+                    href="https://github.com/Bogbra/ai-systems-showcase"
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={() => setMenuOpen(false)}
