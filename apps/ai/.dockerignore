@@ -1,0 +1,22 @@
+# apps/ai — used when building with apps/ai as the build context directly.
+# (In practice the monorepo root .dockerignore applies because the context is .)
+
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+.env
+.env.*
+!.env.example
+
+.DS_Store
+
+# Tests and notebooks
+*.ipynb
+tests/
+coverage/
+
+# Node (shouldn't be here, but guard anyway)
+node_modules/
