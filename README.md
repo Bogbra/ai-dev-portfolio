@@ -4,7 +4,7 @@ This is not a static portfolio. It is a deployed fullstack agentic AI applicatio
 
 The codebase itself is the work sample: a role-specialized LangGraph workflow with a conditional Critic-to-Revision pass, a RAG pipeline with SSE-streamed, retrieval-constrained answers with visible sources, a deterministic contract-and-structure evaluation harness (not a subjective "looks good" judgment), an MCP server exposing both read-only resources and a rate-limited live tool, guardrails (unsafe-input filtering, fail-closed validation, honeypot, no silent mock fallback), separated frontend/backend architecture, and Vitest, pytest, and Playwright/axe test suites in CI.
 
-**[→ dana-schmitt.vercel.app](https://dana-schmitt.vercel.app)**
+**[→ ai-systems-showcase.vercel.app](https://ai-systems-showcase.vercel.app)**
 
 ---
 

@@ -25,6 +25,7 @@ export function Footer() {
             {t.footer.privacy}
           </Link>
         </nav>
+
       </div>
     </footer>
   );
