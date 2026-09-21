@@ -1,4 +1,5 @@
 import Fastify from 'fastify';
+import type { Server } from 'node:http';
 import envPlugin from './plugins/env.js';
 import corsPlugin from './plugins/cors.js';
 import helmetPlugin from './plugins/helmet.js';
@@ -8,19 +9,23 @@ import healthRoutes from './routes/health.js';
 import contactRoutes from './routes/contact.js';
 
 export async function buildApp() {
-  const app = Fastify({
+  const app = Fastify<Server>({
     logger: {
       level: process.env['NODE_ENV'] === 'production' ? 'warn' : 'info',
     },
     bodyLimit: 1 * 1024 * 1024, // 1 MB — contact form only, no file uploads
     // Exactly one proxy hop sits in front of this service (Railway's edge).
-    // trustProxy: 1 trusts only that hop and resolves request.ip to the
-    // X-Forwarded-For entry Railway itself appended — not any earlier entry a
-    // client could prepend by sending its own X-Forwarded-For header. Using
+    // Fastify >=5.12.1 (CVE-2026-16732) disabled the numeric trustProxy form
+    // entirely — a hop count can't verify who the immediate peer actually is,
+    // so it let an attacker with direct access spoof X-Forwarded-* and forge
+    // the trusted hop. We trust by the edge's own IP range instead: Railway's
+    // proxy always connects from 100.0.0.0/8, so only a request whose peer
+    // falls in that range gets its X-Forwarded-For entry honored — a direct
+    // client can't fake that range on the connecting socket itself. Using
     // `true` instead would trust the whole chain and take the leftmost,
     // client-controlled entry, letting one visitor rotate fake addresses to
     // dodge (or, worse, collapse everyone else into) the rate-limit bucket.
-    trustProxy: 1,
+    trustProxy: '100.0.0.0/8',
   });
 
   // Order matters: env first so all plugins can read app.config

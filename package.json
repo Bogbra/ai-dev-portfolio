@@ -10,9 +10,9 @@
     "test:e2e": "turbo run test:e2e"
   },
   "devDependencies": {
-    "prettier": "^3.5.3",
-    "turbo": "^2.5.4",
-    "typescript": "^5.8.3"
+    "prettier": "^3.9.8",
+    "turbo": "^2.11.2",
+    "typescript": "^5.9.3"
   },
   "engines": {
     "node": ">=22",
