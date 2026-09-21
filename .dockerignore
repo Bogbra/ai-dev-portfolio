@@ -1,0 +1,52 @@
+# Root .dockerignore — applies to the monorepo build context used by
+# apps/web/Dockerfile and apps/api/Dockerfile.
+
+# Dependency caches — rebuilt inside the image
+node_modules/
+**/node_modules/
+
+# Build output
+.next/
+**/dist/
+**/build/
+*.tsbuildinfo
+
+# Python venv and cache (source files needed for Railway build context)
+**/.venv/
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+
+# Environment files — NEVER send secrets to the build context
+# Docker's dockerignore matching is NOT gitignore-compatible: a bare
+# pattern like ".env" (no "**/" prefix) only matches literally at the
+# context root, not at any depth — unlike .gitignore. Every other block
+# in this file uses "**/" for exactly this reason; these patterns need
+# it too, or apps/*/.env (real secrets) end up baked into every image.
+**/.env
+**/.env.*
+!**/.env.example
+
+# Task runner and IDE caches
+.turbo/
+.eslintcache
+.vscode/
+.idea/
+
+# Version control
+.git/
+.gitignore
+
+# OS noise
+.DS_Store
+Thumbs.db
+
+# Test and coverage output
+coverage/
+.nyc_output/
+
+# AI / assistant tooling (local only, never committed)
+.claude/
+CLAUDE.md
+INITIAL_PROMPT.md
+docs/
