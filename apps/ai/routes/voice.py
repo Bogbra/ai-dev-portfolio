@@ -14,6 +14,7 @@ import logging
 import re
 import time
 from typing import Optional
+from urllib.parse import urlparse
 
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
@@ -41,7 +42,11 @@ def _resolve_voice_api_key() -> Optional[str]:
     if settings.VOICE_OPENAI_API_KEY:
         return settings.VOICE_OPENAI_API_KEY
     base_url = (settings.OPENAI_BASE_URL or "").strip()
-    if settings.OPENAI_API_KEY and (not base_url or "api.openai.com" in base_url):
+    # Exact hostname match, not a substring check — "api.openai.com" in
+    # base_url would also match e.g. "https://api.openai.com.evil.example/v1".
+    if settings.OPENAI_API_KEY and (
+        not base_url or urlparse(base_url).hostname == "api.openai.com"
+    ):
         return settings.OPENAI_API_KEY
     return None
 

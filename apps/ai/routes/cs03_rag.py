@@ -19,6 +19,7 @@ import uuid
 from datetime import datetime
 from typing import Optional
 from xml.sax.saxutils import escape as xml_escape
+from xml.sax.saxutils import quoteattr
 
 import sqlite_vec
 from fastapi import APIRouter, Request
@@ -363,8 +364,12 @@ _RAG_SYSTEM_PROMPT = (
 
 
 def _build_source_context(top_results: list[tuple["_ChunkRecord", float]]) -> str:
+    # xml_escape() only escapes &, <, > by default — not ". A filename
+    # containing a literal " could otherwise break out of the attribute and
+    # inject its own tag structure. quoteattr() escapes for attribute
+    # context specifically and supplies its own quotes.
     return "\n".join(
-        f'<source id="{i + 1}" filename="{xml_escape(c.filename)}">\n{xml_escape(c.text)}\n</source>'
+        f"<source id={quoteattr(str(i + 1))} filename={quoteattr(c.filename)}>\n{xml_escape(c.text)}\n</source>"
         for i, (c, _) in enumerate(top_results)
     )
 

@@ -99,7 +99,7 @@ class RerankedOpportunity(_LenientModel):
     # phrasing — unlike the str fields below, there's no enum-drift risk in
     # constraining them, so an out-of-range value correctly fails validation
     # (see _run_live's missing_core_output check) instead of being accepted.
-    rank: int = Field(default=1, ge=1)
+    rank: int = Field(default=1, ge=1, le=10)
     term: str = ""
     intent: str = ""
     opportunity_score: int = Field(default=0, ge=0, le=100)

@@ -47,7 +47,7 @@ export type {
   RagAskResult,
 } from './rag.js';
 
-export { seoStrategyRequestSchema } from './seo.js';
+export { seoStrategyRequestSchema, seoStrategyResultSchema } from './seo.js';
 export type {
   SeoStrategyRequest,
   SeoStrategyResult,

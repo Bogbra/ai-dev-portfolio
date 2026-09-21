@@ -5,6 +5,7 @@ import {
   multiAgentPostResultSchema,
   ragUploadResultSchema,
   ragAskResultSchema,
+  seoStrategyResultSchema,
 } from '@ai/types';
 import type {
   ContactPayload,
@@ -34,7 +35,7 @@ type Result<T> = Ok<T> | Err;
 // between deployed frontend/backend, a proxy rewriting the body) must not
 // be cast and trusted as-is (`as SomeResponse`) and passed on to rendering
 // code that assumes the shape holds.
-function parseResponse<T>(schema: ZodType<T>, data: unknown): Result<T> {
+function parseResponse<S extends ZodType>(schema: S, data: unknown): Result<S['_output']> {
   const parsed = schema.safeParse(data);
   if (!parsed.success) {
     return { ok: false, error: 'Received an unexpected response from the server. Please try again.' };
@@ -274,11 +275,11 @@ export async function runSeoStrategy(
     if (res.status === 429) {
       return { ok: false, error: 'temporarily limited' };
     }
-    const data = (await res.json()) as SeoStrategyResult & { message?: string };
+    const data = (await res.json()) as { message?: string };
     if (!res.ok) {
-      return { ok: false, error: (data as { message?: string }).message ?? 'Strategy generation failed. Please try again.' };
+      return { ok: false, error: data.message ?? 'Strategy generation failed. Please try again.' };
     }
-    return { ok: true, data };
+    return parseResponse(seoStrategyResultSchema, data);
   } catch (err) {
     if (err instanceof DOMException && err.name === 'AbortError') {
       return { ok: false, error: 'timeout' };
