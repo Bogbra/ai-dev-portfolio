@@ -157,6 +157,7 @@ function SourceChunkCard({ chunk, index }: { chunk: RetrievedChunk; index: numbe
       <div className="flex items-start justify-between gap-3 mb-2">
         <p className="font-mono text-xs text-fg uppercase tracking-widest">
           [{String(index + 1)}] {chunk.filename}
+          {chunk.pageNumber != null && ` · page ${chunk.pageNumber}`}
         </p>
         <div className="flex items-center gap-2 flex-shrink-0">
           {chunk.usedInAnswer && (

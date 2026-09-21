@@ -1,4 +1,11 @@
 import { env } from '@/lib/env';
+import {
+  uploadResponseSchema,
+  workflowResultSchema,
+  multiAgentPostResultSchema,
+  ragUploadResultSchema,
+  ragAskResultSchema,
+} from '@ai/types';
 import type {
   ContactPayload,
   UploadResponse,
@@ -14,10 +21,26 @@ import type {
   SeoStrategyRequest,
   SeoStrategyResult,
 } from '@ai/types';
+import type { ZodType } from 'zod';
 
 type Ok<T> = { ok: true; data: T };
 type Err = { ok: false; error: string };
 type Result<T> = Ok<T> | Err;
+
+// The backend already validates its own output at the boundaries that
+// matter (Pydantic on CS01/CS02/RAG's structured results); this is a second,
+// independent check on the frontend side of the same contract — a response
+// that's valid JSON but the wrong shape (a backend bug, a version skew
+// between deployed frontend/backend, a proxy rewriting the body) must not
+// be cast and trusted as-is (`as SomeResponse`) and passed on to rendering
+// code that assumes the shape holds.
+function parseResponse<T>(schema: ZodType<T>, data: unknown): Result<T> {
+  const parsed = schema.safeParse(data);
+  if (!parsed.success) {
+    return { ok: false, error: 'Received an unexpected response from the server. Please try again.' };
+  }
+  return { ok: true, data: parsed.data };
+}
 
 export type RagStreamEvent =
   | { type: 'sources'; sources: RetrievedChunk[]; confidence: string; reasoning: string; mockMode: boolean }
@@ -44,7 +67,11 @@ export async function submitContact(
 
     return {
       ok: true,
-      data: { message: data.message ?? 'Message received.', delivered: data.delivered ?? true },
+      // Fail closed: the backend always sends `delivered` explicitly on a
+      // 200 (contact.ts) — anything else (missing field, wrong type) is an
+      // unexpected response shape, not a confirmed delivery, so it must not
+      // read as "sent" to the user.
+      data: { message: data.message ?? 'Message received.', delivered: data.delivered === true },
     };
   } catch {
     return { ok: false, error: 'Unable to connect. Please check your connection and try again.' };
@@ -73,11 +100,11 @@ export async function parseWorkflowUpload(
     if (res.status === 429) {
       return { ok: false, error: 'temporarily limited' };
     }
-    const data = (await res.json()) as UploadResponse & { message?: string };
+    const data = (await res.json()) as { message?: string };
     if (!res.ok) {
       return { ok: false, error: data.message ?? 'Failed to parse file.' };
     }
-    return { ok: true, data };
+    return parseResponse(uploadResponseSchema, data);
   } catch {
     return { ok: false, error: 'Unable to connect. Please check your connection and try again.' };
   }
@@ -95,14 +122,11 @@ export async function runMultiAgentPost(
     if (res.status === 429) {
       return { ok: false, error: 'temporarily limited' };
     }
-    const data = (await res.json()) as MultiAgentPostResult & { message?: string };
+    const data = (await res.json()) as { message?: string };
     if (!res.ok) {
-      return {
-        ok: false,
-        error: (data as { message?: string }).message ?? 'Workflow failed. Please try again.',
-      };
+      return { ok: false, error: data.message ?? 'Workflow failed. Please try again.' };
     }
-    return { ok: true, data };
+    return parseResponse(multiAgentPostResultSchema, data);
   } catch {
     return { ok: false, error: 'Unable to connect. Please check your connection and try again.' };
   }
@@ -118,9 +142,9 @@ export async function ragUpload(
       body: JSON.stringify(payload),
     });
     if (res.status === 429) return { ok: false, error: 'temporarily limited' };
-    const data = (await res.json()) as RagUploadResult & { message?: string };
-    if (!res.ok) return { ok: false, error: (data as { message?: string }).message ?? 'Upload failed.' };
-    return { ok: true, data };
+    const data = (await res.json()) as { message?: string };
+    if (!res.ok) return { ok: false, error: data.message ?? 'Upload failed.' };
+    return parseResponse(ragUploadResultSchema, data);
   } catch {
     return { ok: false, error: 'Unable to connect. Please check your connection and try again.' };
   }
@@ -136,9 +160,9 @@ export async function ragAsk(
       body: JSON.stringify({ ...payload, _honey: '' }),
     });
     if (res.status === 429) return { ok: false, error: 'temporarily limited' };
-    const data = (await res.json()) as RagAskResult & { message?: string };
-    if (!res.ok) return { ok: false, error: (data as { message?: string }).message ?? 'Request failed.' };
-    return { ok: true, data };
+    const data = (await res.json()) as { message?: string };
+    if (!res.ok) return { ok: false, error: data.message ?? 'Request failed.' };
+    return parseResponse(ragAskResultSchema, data);
   } catch {
     return { ok: false, error: 'Unable to connect. Please check your connection and try again.' };
   }
@@ -165,6 +189,13 @@ export async function ragAskStream(
     const reader = res.body!.getReader();
     const decoder = new TextDecoder();
     let buffer = '';
+    // 'sources'/'token' are progress events, not completion — if the
+    // connection drops (a proxy timeout, a killed backend worker) after
+    // some tokens but before one of these arrives, EOF must not read as a
+    // clean finish: the UI only leaves its "streaming" state on 'done', so
+    // returning ok:true here would leave it stuck on "Generating…" forever
+    // with no error shown.
+    let terminalEventReceived = false;
 
     while (true) {
       const { done, value } = await reader.read();
@@ -176,11 +207,18 @@ export async function ragAskStream(
         for (const line of part.split('\n')) {
           if (line.startsWith('data: ')) {
             try {
-              onEvent(JSON.parse(line.slice(6)) as RagStreamEvent);
+              const event = JSON.parse(line.slice(6)) as RagStreamEvent;
+              if (event.type === 'done' || event.type === 'no_context' || event.type === 'error') {
+                terminalEventReceived = true;
+              }
+              onEvent(event);
             } catch { /* ignore malformed event */ }
           }
         }
       }
+    }
+    if (!terminalEventReceived) {
+      return { ok: false, error: 'The connection ended before a response was received. Please try again.' };
     }
     return { ok: true };
   } catch (err) {
@@ -201,11 +239,11 @@ export async function runWorkflow(
     if (res.status === 429) {
       return { ok: false, error: 'temporarily limited' };
     }
-    const data = (await res.json()) as WorkflowRunResponse & { message?: string };
+    const data = (await res.json()) as { message?: string };
     if (!res.ok) {
       return { ok: false, error: data.message ?? 'Workflow failed. Please try again.' };
     }
-    return { ok: true, data };
+    return parseResponse(workflowResultSchema, data);
   } catch {
     return { ok: false, error: 'Unable to connect. Please check your connection and try again.' };
   }

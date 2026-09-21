@@ -35,14 +35,15 @@ function postFromEdge(app: FastifyInstance, xff: string) {
 
 // ─── trustProxy hop resolution ────────────────────────────────────────────────
 
-describe('rate limiting — trustProxy: 1 resolves the real peer, not the spoofed one', () => {
+describe('rate limiting — trustProxy CIDR resolves the real peer, not the spoofed one', () => {
   it('shares one bucket across requests with the same real peer but different spoofed leftmost XFF entries', async () => {
     const app = await buildApp();
 
     // /contact allows max: 3 per 10 minutes. All four requests below share the
     // same rightmost XFF entry (the hop Railway appended) even though each
-    // lies about a different leftmost entry — trustProxy: 1 must resolve them
-    // to the same request.ip and therefore the same bucket.
+    // lies about a different leftmost entry — trustProxy: '100.0.0.0/8' (see
+    // server.ts) must resolve them to the same request.ip and therefore the
+    // same bucket.
     const realPeer = '9.9.9.9';
     const first = await postFromEdge(app, `1.2.3.4, ${realPeer}`);
     const second = await postFromEdge(app, `5.6.7.8, ${realPeer}`);

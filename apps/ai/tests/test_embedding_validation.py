@@ -72,7 +72,7 @@ def test_embed_openai_accepts_a_well_formed_response(monkeypatch):
 def test_rag_upload_live_mode_rejects_malformed_embedding_batch(client: TestClient, monkeypatch):
     monkeypatch.setattr(cs03_rag.settings, "OPENAI_API_KEY", "sk-test")
     monkeypatch.setattr(
-        cs03_rag, "_extract_pdf_text", lambda _content: "irrelevant — chunked below"
+        cs03_rag, "_extract_pdf_pages", lambda _content: [(1, "irrelevant — chunked below")]
     )
     monkeypatch.setattr(cs03_rag, "_chunk_text", lambda _text: ["first chunk", "second chunk"])
 

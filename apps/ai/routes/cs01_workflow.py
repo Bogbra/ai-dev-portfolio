@@ -83,18 +83,33 @@ def _parse_csv(text: str) -> list[dict[str, str]]:
 
 
 def _parse_xlsx(data: bytes) -> list[dict[str, str]]:
-    wb = openpyxl.load_workbook(io.BytesIO(data))
-    ws = wb.active
-    if ws is None:
-        return []
-    rows = list(ws.iter_rows(values_only=True))
-    if not rows:
-        return []
-    headers = [str(h) if h is not None else "" for h in rows[0]]
-    result: list[dict[str, str]] = []
-    for row in rows[1:]:
-        result.append({h: (str(v) if v is not None else "") for h, v in zip(headers, row)})
-    return result
+    # read_only=True streams rows from the underlying zip instead of
+    # materialising the whole sheet up front — the MAX_UPLOAD_SIZE_BYTES
+    # check above only bounds the *compressed* file, and a small XLSX can
+    # decompress into a much larger sheet. Stopping at MAX_UPLOAD_ROWS + 1
+    # (one past the limit, not the limit itself) means the file is still
+    # read incrementally rather than fully unpacked, while the existing
+    # `len(rows) > MAX_UPLOAD_ROWS` check in parse_upload still sees enough
+    # rows to correctly reject an oversized file instead of silently
+    # truncating it into an incomplete-looking success.
+    wb = openpyxl.load_workbook(io.BytesIO(data), read_only=True, data_only=True)
+    try:
+        ws = wb.active
+        if ws is None:
+            return []
+        headers: list[str] | None = None
+        result: list[dict[str, str]] = []
+        row_limit = settings.MAX_UPLOAD_ROWS + 1
+        for row in ws.iter_rows(values_only=True):
+            if headers is None:
+                headers = [str(h) if h is not None else "" for h in row]
+                continue
+            result.append({h: (str(v) if v is not None else "") for h, v in zip(headers, row)})
+            if len(result) >= row_limit:
+                break
+        return result
+    finally:
+        wb.close()
 
 
 # ─── Parse file buffer → rows ─────────────────────────────────────────────────

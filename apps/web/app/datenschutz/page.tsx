@@ -232,8 +232,11 @@ export default function DatenschutzPage() {
               Alle drei Dienste werden über einen serverseitig konfigurierten OpenAI-API-Schlüssel
               abgerufen (<span className="font-mono text-base">OPENAI_API_KEY</span> oder ein
               separater{' '}<span className="font-mono text-base">VOICE_OPENAI_API_KEY</span>{' '}
-              für Whisper/TTS). Keine der verarbeiteten Daten wird durch OpenAI dauerhaft gespeichert, soweit
-              die Data-Retention-Richtlinie von OpenAI keine Ausnahmen vorsieht.
+              für Whisper/TTS). OpenAI kann API-Daten abhängig vom genutzten Endpoint und der
+              Data-Control-Konfiguration des Kontos für einen begrenzten Zeitraum speichern,
+              etwa zu Zwecken der Missbrauchserkennung (Abuse-Monitoring). Es handelt sich
+              hierbei nicht um eine dauerhafte, unbegrenzte Speicherung. Die genauen
+              Aufbewahrungsfristen legt OpenAI fest.
               Weitere Informationen:{' '}
               <span className="font-mono text-base">openai.com/policies/privacy-policy</span>
             </p>
@@ -277,6 +280,17 @@ export default function DatenschutzPage() {
               <strong className="text-fg font-medium">OpenAI, Inc.</strong> (USA) übermittelt, um
               Keyword-Analyse, Intent-Clustering und Prioritätsempfehlungen zu generieren. Ohne
               API-Schlüssel wird ausschließlich ein vorberechnetes Musterresultat zurückgegeben.
+            </p>
+            <p>
+              <strong className="text-fg font-medium">Web-Recherche (optional):</strong> Nutzerinnen
+              und Nutzer können optional die Funktion &bdquo;Use web research&ldquo; aktivieren.
+              In diesem Fall wird die eingegebene Geschäftsbeschreibung an die API von{' '}
+              <strong className="text-fg font-medium">Tavily Inc.</strong> (USA) übermittelt,
+              um aktuellen Marktkontext für die Strategie zu recherchieren. Die Funktion ist
+              standardmäßig deaktiviert und wird nur auf ausdrücklichen Wunsch ausgeführt. Ist
+              kein Tavily-API-Schlüssel konfiguriert, bleibt die Funktion ohne Wirkung.
+              Weitere Informationen:{' '}
+              <span className="font-mono text-base">tavily.com/privacy</span>
             </p>
             <p>
               Die angezeigten Opportunity-Scores sind{' '}

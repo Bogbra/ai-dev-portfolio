@@ -11,6 +11,7 @@ class SeoStrategyRequest(BaseModel):
     market: str = "English"
     goal: Literal["traffic", "leads", "content", "visibility"] = "leads"
     url: str = ""
+    useWebContext: bool = False
 
     @field_validator("topic")
     @classmethod
@@ -93,10 +94,15 @@ class Step1Output(_LenientModel):
 
 
 class RerankedOpportunity(_LenientModel):
-    rank: int = 0
+    # rank/opportunity_score are numerically bounded by contract (_STEP2_SCHEMA:
+    # "rank: integer 1-10", "opportunity_score: integer 0-100) regardless of
+    # phrasing — unlike the str fields below, there's no enum-drift risk in
+    # constraining them, so an out-of-range value correctly fails validation
+    # (see _run_live's missing_core_output check) instead of being accepted.
+    rank: int = Field(default=1, ge=1)
     term: str = ""
     intent: str = ""
-    opportunity_score: int = 0
+    opportunity_score: int = Field(default=0, ge=0, le=100)
     lead_relevance: str = ""
     business_relevance: str = ""
     intent_fit: str = ""

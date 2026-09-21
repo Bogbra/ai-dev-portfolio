@@ -18,7 +18,7 @@ The codebase itself is the work sample: a role-specialized LangGraph workflow wi
 | **Guardrails** | Unsafe-input filtering before any LLM call, fail-closed validation (a broken check blocks, not allows), honeypot + rate limits, and no silent fallback to mock output on a genuine provider error |
 | **Production-minded frontend** | Next.js 15 App Router, React Server Components, TypeScript strict mode, Tailwind CSS v4, Motion animations, dark/light mode, WCAG AA accessibility |
 | **Separated architecture** | Three independently deployable apps in one pnpm monorepo — Next.js (Vercel), Fastify API (Railway), FastAPI AI backend (Railway Docker) |
-| **Security** | CSP with per-request nonce, Helmet, CORS, rate limiting, Zod/Pydantic validation on all inputs, no secrets in frontend code |
+| **Security** | CSP with per-request nonce, Helmet (Fastify), CORS + body-size limits (FastAPI), rate limiting, Zod/Pydantic validation on all inputs, no secrets in frontend code |
 | **Tested** | Vitest (TypeScript schemas and Fastify routes) + pytest (Python AI backend, unit and integration) + Playwright/axe-core (e2e and WCAG AA checks, including a real browser round trip against the running MCP endpoint) — all wired into GitHub Actions CI; see CI for current pass/fail status |
 
 ---
@@ -120,7 +120,7 @@ Docker Compose reads — see [Docker](#docker) below.
 | Contact API | http://localhost:3001 |
 | AI backend | http://localhost:4000 |
 
-All AI case studies and labs support mock/demo behavior when provider keys are not configured — no API key required to explore the UI.
+All AI case studies and labs except the Voice Agent Lab support mock/demo behavior when provider keys are not configured — no API key required to explore the UI. Voice has no mock mode; it shows a disabled state instead (see [Demo limits & cost stewardship](#demo-limits--cost-stewardship)).
 
 ---
 

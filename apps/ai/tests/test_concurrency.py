@@ -50,11 +50,11 @@ async def _concurrent_health_elapsed(slow_call) -> float:
 
 
 def test_rag_upload_pdf_parsing_does_not_block_concurrent_health_request(monkeypatch):
-    def _slow_extract(_b64_content: str) -> str:
+    def _slow_extract(_b64_content: str) -> list[tuple[int, str]]:
         time.sleep(_ARTIFICIAL_PARSE_DELAY_SECONDS)
-        return "slow pdf text " * 20
+        return [(1, "slow pdf text " * 20)]
 
-    monkeypatch.setattr(cs03_rag, "_extract_pdf_text", _slow_extract)
+    monkeypatch.setattr(cs03_rag, "_extract_pdf_pages", _slow_extract)
 
     async def upload(client: httpx.AsyncClient) -> httpx.Response:
         payload = {

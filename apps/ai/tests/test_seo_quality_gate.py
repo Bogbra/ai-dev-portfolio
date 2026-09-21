@@ -15,14 +15,21 @@ def _stub_step1(*args, **kwargs) -> dict:
     return {
         "summary": "A business summary.",
         "extracted_business_context": {},
-        "keyword_candidates": [],
+        "keyword_candidates": [{"term": "workflow automation", "type": "seed", "intent": "informational"}],
         "intent_clusters": [],
     }
 
 
 def _stub_step2(*args, **kwargs) -> dict:
     return {
-        "reranked_opportunities": [],
+        "reranked_opportunities": [
+            {
+                "rank": 1,
+                "term": "workflow automation",
+                "opportunity_score": 80,
+                "why_ranked_here": "Matches the target audience closely and shows strong service-intent signal for lead generation.",
+            }
+        ],
         "content_ideas": [],
         "lead_generation_angles": [],
         "roadmap": [],
@@ -96,6 +103,22 @@ def test_warnings_empty_when_correction_fully_resolves_issues(monkeypatch):
     result = asyncio.run(seo._run_live("a topic", "", "us", "traffic", ""))
 
     assert result["warnings"] == []
+
+
+def test_run_live_raises_on_empty_core_output(monkeypatch):
+    # response_format=json_object only guarantees valid JSON syntax — a
+    # response that's syntactically fine but empty (or that fails
+    # Step1Output/Step2Output validation, reduced to {} by the step
+    # functions) must not silently return "mode": "live" with nothing in it.
+    _patch_common(monkeypatch)
+    monkeypatch.setattr(seo, "_step1_extract_and_generate", lambda *a, **kw: _async_result({}))
+    monkeypatch.setattr(seo, "_step2_rerank_and_plan", lambda *a, **kw: _async_result({}))
+
+    try:
+        asyncio.run(seo._run_live("a topic", "", "us", "traffic", ""))
+        assert False, "expected _run_live to raise on empty core output"
+    except RuntimeError:
+        pass
 
 
 def test_run_live_constructs_client_with_longer_timeout_and_zero_retries(monkeypatch):

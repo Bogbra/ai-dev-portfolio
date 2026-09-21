@@ -12,6 +12,7 @@ export const seoStrategyRequestSchema = z.object({
   market: z.string().max(80).default('English'),
   goal: z.enum(['traffic', 'leads', 'content', 'visibility']).default('leads'),
   url: z.string().max(200).default(''),
+  useWebContext: z.boolean().default(false),
   _honey: z.string().default(''),
 }).strict();
 

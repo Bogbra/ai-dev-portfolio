@@ -195,7 +195,9 @@ def test_rag_upload_generates_session_id_usable_by_rag_ask(client: TestClient, m
     # Force mock mode regardless of a locally configured OPENAI_API_KEY (this
     # test must not depend on, or make, a real OpenAI call).
     monkeypatch.setattr(cs03_rag.settings, "OPENAI_API_KEY", None)
-    monkeypatch.setattr(cs03_rag, "_extract_pdf_text", lambda _content: "quarterly revenue grew.")
+    monkeypatch.setattr(
+        cs03_rag, "_extract_pdf_pages", lambda _content: [(1, "quarterly revenue grew.")]
+    )
 
     upload = client.post(
         "/rag/upload",
@@ -260,7 +262,7 @@ def test_rag_upload_rejects_invalid_base64(client: TestClient):
 
 def test_rag_upload_rejects_pdf_with_no_extractable_text(client: TestClient, monkeypatch):
     monkeypatch.setattr(cs03_rag.settings, "OPENAI_API_KEY", None)
-    monkeypatch.setattr(cs03_rag, "_extract_pdf_text", lambda _data: "   ")
+    monkeypatch.setattr(cs03_rag, "_extract_pdf_pages", lambda _data: [(1, "   ")])
 
     r = client.post(
         "/rag/upload",
@@ -281,7 +283,7 @@ def test_rag_upload_rejects_when_no_usable_chunks_survive(client: TestClient, mo
     # Text extracts, but every "chunk" is too short to survive _chunk_text's
     # 20-character filter — the session must not be stored as if it were usable.
     monkeypatch.setattr(cs03_rag.settings, "OPENAI_API_KEY", None)
-    monkeypatch.setattr(cs03_rag, "_extract_pdf_text", lambda _data: "hi. ok. no.")
+    monkeypatch.setattr(cs03_rag, "_extract_pdf_pages", lambda _data: [(1, "hi. ok. no.")])
 
     r = client.post(
         "/rag/upload",

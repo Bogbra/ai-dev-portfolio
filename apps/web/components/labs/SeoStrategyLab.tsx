@@ -265,6 +265,7 @@ export function SeoStrategyLab() {
       market: String(data.get('market') ?? 'English'),
       goal: String(data.get('goal') ?? 'leads') as 'traffic' | 'leads' | 'content' | 'visibility',
       url: String(data.get('url') ?? ''),
+      useWebContext: data.get('useWebContext') === 'on',
     };
 
     const parsed = seoStrategyRequestSchema.safeParse(raw);
@@ -379,6 +380,20 @@ export function SeoStrategyLab() {
               placeholder="https://example.com"
               error={fieldErrors['url']}
             />
+          </div>
+
+          <div className="flex items-start gap-3">
+            <input
+              type="checkbox"
+              id="seo-use-web-context"
+              name="useWebContext"
+              style={{ accentColor: 'var(--color-fg)', marginTop: '3px' }}
+              className="h-4 w-4 flex-shrink-0 cursor-pointer border border-border rounded-sm bg-bg focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2"
+            />
+            <label htmlFor="seo-use-web-context" className="font-mono text-sm text-muted leading-relaxed cursor-pointer">
+              Use web research — sends your business description to Tavily (a third-party search
+              API) for additional market context. Off by default.
+            </label>
           </div>
 
           {runState === 'error' && errorMsg && (
