@@ -10,13 +10,13 @@ import { Footer } from '@/components/ui/Footer';
 import '../styles/globals.css';
 
 const siteUrl = process.env['NEXT_PUBLIC_SITE_URL'] ?? 'http://localhost:3000';
-const title = 'Agentic AI Engineering Portfolio';
+const title = 'AI Systems Showcase';
 const description =
   'Agentic AI Engineer building multi-agent workflows, RAG systems, and an MCP server — built with evaluation, guardrails, testing, and production-minded constraints.';
 
 export const metadata: Metadata = {
   title: {
-    template: '%s — Agentic AI Engineering Portfolio',
+    template: '%s — AI Systems Showcase',
     default: title,
   },
   description,
@@ -28,7 +28,7 @@ export const metadata: Metadata = {
     url: '/',
     title,
     description,
-    siteName: 'Agentic AI Engineering Portfolio',
+    siteName: 'AI Systems Showcase',
     images: [{ url: '/opengraph-image', width: 1200, height: 630, alt: title }],
   },
   twitter: {
