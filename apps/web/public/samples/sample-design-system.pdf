@@ -1,0 +1,166 @@
+%PDF-1.4
+%‚„œ”
+1 0 obj
+<</Type /Catalog /Pages 2 0 R>>
+endobj
+2 0 obj
+<</Type /Pages /Kids [3 0 R 4 0 R 5 0 R] /Count 3>>
+endobj
+3 0 obj
+<</Type /Page /Parent 2 0 R /MediaBox [0 0 595 842]
+/Resources <</Font <</F1 9 0 R>>>>
+/Contents 6 0 R>>
+endobj
+4 0 obj
+<</Type /Page /Parent 2 0 R /MediaBox [0 0 595 842]
+/Resources <</Font <</F1 9 0 R>>>>
+/Contents 7 0 R>>
+endobj
+5 0 obj
+<</Type /Page /Parent 2 0 R /MediaBox [0 0 595 842]
+/Resources <</Font <</F1 9 0 R>>>>
+/Contents 8 0 R>>
+endobj
+6 0 obj
+<</Length 2518>>
+stream
+BT /F1 10 Tf 50 760 Td (DESIGN SYSTEMS  AN OVERVIEW) Tj ET
+BT /F1 10 Tf 50 742 Td (===========================) Tj ET
+BT /F1 10 Tf 50 724 Td () Tj ET
+BT /F1 10 Tf 50 706 Td (What is a design system?) Tj ET
+BT /F1 10 Tf 50 688 Td (------------------------) Tj ET
+BT /F1 10 Tf 50 670 Td (A design system is a collection of reusable components, guided by clear) Tj ET
+BT /F1 10 Tf 50 652 Td (standards, that can be assembled together to build any number of applications.) Tj ET
+BT /F1 10 Tf 50 634 Td (It bridges the gap between design and engineering by providing a single source) Tj ET
+BT /F1 10 Tf 50 616 Td (of truth for visual and interaction patterns.) Tj ET
+BT /F1 10 Tf 50 598 Td () Tj ET
+BT /F1 10 Tf 50 580 Td (Core layers of a design system) Tj ET
+BT /F1 10 Tf 50 562 Td (------------------------------) Tj ET
+BT /F1 10 Tf 50 544 Td (1. Design tokens) Tj ET
+BT /F1 10 Tf 50 526 Td (   The smallest units of the design language: color, spacing, typography,) Tj ET
+BT /F1 10 Tf 50 508 Td (   motion duration, and radius values expressed as named variables.) Tj ET
+BT /F1 10 Tf 50 490 Td (   Tokens make the system themeable and consistent across surfaces.) Tj ET
+BT /F1 10 Tf 50 472 Td () Tj ET
+BT /F1 10 Tf 50 454 Td (2. Component library) Tj ET
+BT /F1 10 Tf 50 436 Td (   Reusable UI elements built on top of tokens: buttons, inputs, cards,) Tj ET
+BT /F1 10 Tf 50 418 Td (   modals, navigation. Each component ships with documented variants,) Tj ET
+BT /F1 10 Tf 50 400 Td (   states \(default, hover, focus, disabled, error\), and accessibility) Tj ET
+BT /F1 10 Tf 50 382 Td (   requirements.) Tj ET
+BT /F1 10 Tf 50 364 Td () Tj ET
+BT /F1 10 Tf 50 346 Td (3. Pattern library) Tj ET
+BT /F1 10 Tf 50 328 Td (   Combinations of components that solve common UX problems: form layouts,) Tj ET
+BT /F1 10 Tf 50 310 Td (   data tables, onboarding flows, empty states, error pages.) Tj ET
+BT /F1 10 Tf 50 292 Td () Tj ET
+BT /F1 10 Tf 50 274 Td (4. Documentation and guidelines) Tj ET
+BT /F1 10 Tf 50 256 Td (   Usage rules, accessibility notes, copywriting guidelines, and) Tj ET
+BT /F1 10 Tf 50 238 Td (   implementation examples that help teams use the system correctly.) Tj ET
+BT /F1 10 Tf 50 220 Td () Tj ET
+BT /F1 10 Tf 50 202 Td (Benefits of a design system) Tj ET
+BT /F1 10 Tf 50 184 Td (---------------------------) Tj ET
+BT /F1 10 Tf 50 166 Td (Consistency: users experience a coherent visual and interaction language) Tj ET
+BT /F1 10 Tf 50 148 Td (across all products.) Tj ET
+BT /F1 10 Tf 50 130 Td () Tj ET
+endstream
+endobj
+7 0 obj
+<</Length 2424>>
+stream
+BT /F1 10 Tf 50 760 Td (Speed: teams build new features faster by composing existing components) Tj ET
+BT /F1 10 Tf 50 742 Td (rather than rebuilding patterns from scratch.) Tj ET
+BT /F1 10 Tf 50 724 Td () Tj ET
+BT /F1 10 Tf 50 706 Td (Quality: shared components are tested, accessible, and reviewed once,) Tj ET
+BT /F1 10 Tf 50 688 Td (then reused everywhere.) Tj ET
+BT /F1 10 Tf 50 670 Td () Tj ET
+BT /F1 10 Tf 50 652 Td (Collaboration: designers and engineers share vocabulary, reducing) Tj ET
+BT /F1 10 Tf 50 634 Td (miscommunication and back-and-forth.) Tj ET
+BT /F1 10 Tf 50 616 Td () Tj ET
+BT /F1 10 Tf 50 598 Td (Scalability: a system grows with the product and the team without) Tj ET
+BT /F1 10 Tf 50 580 Td (accumulating inconsistency debt.) Tj ET
+BT /F1 10 Tf 50 562 Td () Tj ET
+BT /F1 10 Tf 50 544 Td (Design tokens in depth) Tj ET
+BT /F1 10 Tf 50 526 Td (----------------------) Tj ET
+BT /F1 10 Tf 50 508 Td (Tokens are typically organized in three tiers:) Tj ET
+BT /F1 10 Tf 50 490 Td () Tj ET
+BT /F1 10 Tf 50 472 Td (  Global tokens: raw values. Example: --color-blue-500: #3B82F6) Tj ET
+BT /F1 10 Tf 50 454 Td (  Semantic tokens: role-based aliases. Example: --color-action: var\(--color-blue-500\)) Tj ET
+BT /F1 10 Tf 50 436 Td (  Component tokens: component-specific. Example: --button-bg: var\(--color-action\)) Tj ET
+BT /F1 10 Tf 50 418 Td () Tj ET
+BT /F1 10 Tf 50 400 Td (This structure allows a complete theme change \(e.g. dark mode, brand) Tj ET
+BT /F1 10 Tf 50 382 Td (switch\) by overriding only the semantic and global layers.) Tj ET
+BT /F1 10 Tf 50 364 Td () Tj ET
+BT /F1 10 Tf 50 346 Td (Typography in a design system) Tj ET
+BT /F1 10 Tf 50 328 Td (-----------------------------) Tj ET
+BT /F1 10 Tf 50 310 Td (A typography scale defines:) Tj ET
+BT /F1 10 Tf 50 292 Td (  - Font families \(display, body, mono\)) Tj ET
+BT /F1 10 Tf 50 274 Td (  - Size scale \(typically 810 steps, often based on a modular scale\)) Tj ET
+BT /F1 10 Tf 50 256 Td (  - Line height per size) Tj ET
+BT /F1 10 Tf 50 238 Td (  - Letter spacing per size) Tj ET
+BT /F1 10 Tf 50 220 Td (  - Font weight usage rules) Tj ET
+BT /F1 10 Tf 50 202 Td () Tj ET
+BT /F1 10 Tf 50 184 Td (Good typography systems distinguish between editorial type \(display, hero\)) Tj ET
+BT /F1 10 Tf 50 166 Td (and UI type \(labels, captions, body\).) Tj ET
+BT /F1 10 Tf 50 148 Td () Tj ET
+BT /F1 10 Tf 50 130 Td (Motion in a design system) Tj ET
+endstream
+endobj
+8 0 obj
+<</Length 2598>>
+stream
+BT /F1 10 Tf 50 760 Td (-------------------------) Tj ET
+BT /F1 10 Tf 50 742 Td (Motion guidelines specify:) Tj ET
+BT /F1 10 Tf 50 724 Td (  - Easing curves per use case \(enter, exit, in-place\)) Tj ET
+BT /F1 10 Tf 50 706 Td (  - Duration ranges \(micro: 100ms, standard: 200ms, narrative: 400ms+\)) Tj ET
+BT /F1 10 Tf 50 688 Td (  - Which properties to animate \(prefer transform and opacity\)) Tj ET
+BT /F1 10 Tf 50 670 Td (  - Reduced-motion fallback rules) Tj ET
+BT /F1 10 Tf 50 652 Td () Tj ET
+BT /F1 10 Tf 50 634 Td (Accessibility requirements) Tj ET
+BT /F1 10 Tf 50 616 Td (--------------------------) Tj ET
+BT /F1 10 Tf 50 598 Td (Every component in a design system must document:) Tj ET
+BT /F1 10 Tf 50 580 Td (  - Keyboard interaction pattern \(Tab, Enter, Space, Escape, Arrow keys\)) Tj ET
+BT /F1 10 Tf 50 562 Td (  - Required ARIA roles and attributes) Tj ET
+BT /F1 10 Tf 50 544 Td (  - Minimum contrast ratio \(WCAG AA: 4.5:1 for normal text\)) Tj ET
+BT /F1 10 Tf 50 526 Td (  - Focus indicator style) Tj ET
+BT /F1 10 Tf 50 508 Td (  - Screen reader announcement behavior) Tj ET
+BT /F1 10 Tf 50 490 Td () Tj ET
+BT /F1 10 Tf 50 472 Td (Design system governance) Tj ET
+BT /F1 10 Tf 50 454 Td (------------------------) Tj ET
+BT /F1 10 Tf 50 436 Td (A successful system needs clear ownership:) Tj ET
+BT /F1 10 Tf 50 418 Td (  - A core team \(or designated maintainers\) reviews contributions) Tj ET
+BT /F1 10 Tf 50 400 Td (  - A versioning strategy \(semantic versioning is common\)) Tj ET
+BT /F1 10 Tf 50 382 Td (  - A deprecation policy for removing old patterns) Tj ET
+BT /F1 10 Tf 50 364 Td (  - A feedback channel for product teams using the system) Tj ET
+BT /F1 10 Tf 50 346 Td () Tj ET
+BT /F1 10 Tf 50 328 Td (Common pitfalls) Tj ET
+BT /F1 10 Tf 50 310 Td (---------------) Tj ET
+BT /F1 10 Tf 50 292 Td (  - Too abstract: tokens so generic they require guesswork to use) Tj ET
+BT /F1 10 Tf 50 274 Td (  - Too prescriptive: components so rigid they cannot cover real use cases) Tj ET
+BT /F1 10 Tf 50 256 Td (  - Unmaintained docs: guidelines diverge from implementation over time) Tj ET
+BT /F1 10 Tf 50 238 Td (  - No adoption strategy: teams build around the system instead of with it) Tj ET
+BT /F1 10 Tf 50 220 Td () Tj ET
+BT /F1 10 Tf 50 202 Td (Summary) Tj ET
+BT /F1 10 Tf 50 184 Td (-------) Tj ET
+BT /F1 10 Tf 50 166 Td (A design system is not a project with a finish line  it is a product) Tj ET
+BT /F1 10 Tf 50 148 Td (for product teams. The best systems are maintained, documented, and) Tj ET
+BT /F1 10 Tf 50 130 Td (evolve together with the products they serve.) Tj ET
+endstream
+endobj
+9 0 obj
+<</Type /Font /Subtype /Type1 /BaseFont /Courier>>
+endobj
+xref
+0 10
+0000000000 65535 f 
+0000000015 00000 n 
+0000000062 00000 n 
+0000000129 00000 n 
+0000000249 00000 n 
+0000000369 00000 n 
+0000000489 00000 n 
+0000003056 00000 n 
+0000005529 00000 n 
+0000008176 00000 n 
+trailer
+<</Size 10 /Root 1 0 R>>
+startxref
+8242
+%%EOF

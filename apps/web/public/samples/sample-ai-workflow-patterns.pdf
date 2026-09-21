@@ -1,0 +1,198 @@
+%PDF-1.4
+%‚„œ”
+1 0 obj
+<</Type /Catalog /Pages 2 0 R>>
+endobj
+2 0 obj
+<</Type /Pages /Kids [3 0 R 4 0 R 5 0 R 6 0 R] /Count 4>>
+endobj
+3 0 obj
+<</Type /Page /Parent 2 0 R /MediaBox [0 0 595 842]
+/Resources <</Font <</F1 11 0 R>>>>
+/Contents 7 0 R>>
+endobj
+4 0 obj
+<</Type /Page /Parent 2 0 R /MediaBox [0 0 595 842]
+/Resources <</Font <</F1 11 0 R>>>>
+/Contents 8 0 R>>
+endobj
+5 0 obj
+<</Type /Page /Parent 2 0 R /MediaBox [0 0 595 842]
+/Resources <</Font <</F1 11 0 R>>>>
+/Contents 9 0 R>>
+endobj
+6 0 obj
+<</Type /Page /Parent 2 0 R /MediaBox [0 0 595 842]
+/Resources <</Font <</F1 11 0 R>>>>
+/Contents 10 0 R>>
+endobj
+7 0 obj
+<</Length 2428>>
+stream
+BT /F1 10 Tf 50 760 Td (AI WORKFLOW PATTERNS FOR PRODUCT TEAMS) Tj ET
+BT /F1 10 Tf 50 742 Td (======================================) Tj ET
+BT /F1 10 Tf 50 724 Td () Tj ET
+BT /F1 10 Tf 50 706 Td (Introduction) Tj ET
+BT /F1 10 Tf 50 688 Td (------------) Tj ET
+BT /F1 10 Tf 50 670 Td (Modern product teams are integrating large language models \(LLMs\) into) Tj ET
+BT /F1 10 Tf 50 652 Td (workflows that were previously manual, expensive, or slow. This document) Tj ET
+BT /F1 10 Tf 50 634 Td (outlines common patterns, their trade-offs, and implementation considerations.) Tj ET
+BT /F1 10 Tf 50 616 Td () Tj ET
+BT /F1 10 Tf 50 598 Td (Pattern 1  Single prompt \(zero-shot\)) Tj ET
+BT /F1 10 Tf 50 580 Td (-------------------------------------) Tj ET
+BT /F1 10 Tf 50 562 Td (The simplest pattern: one user input, one LLM call, one output.) Tj ET
+BT /F1 10 Tf 50 544 Td () Tj ET
+BT /F1 10 Tf 50 526 Td (Use cases:) Tj ET
+BT /F1 10 Tf 50 508 Td (  - Text summarisation) Tj ET
+BT /F1 10 Tf 50 490 Td (  - Translation) Tj ET
+BT /F1 10 Tf 50 472 Td (  - Classification) Tj ET
+BT /F1 10 Tf 50 454 Td (  - Simple Q&A with known context) Tj ET
+BT /F1 10 Tf 50 436 Td () Tj ET
+BT /F1 10 Tf 50 418 Td (Trade-offs:) Tj ET
+BT /F1 10 Tf 50 400 Td (  Pro: low latency, simple to implement, easy to test.) Tj ET
+BT /F1 10 Tf 50 382 Td (  Con: limited reasoning depth, brittle for complex or multi-step tasks.) Tj ET
+BT /F1 10 Tf 50 364 Td () Tj ET
+BT /F1 10 Tf 50 346 Td (Pattern 2  Chain-of-thought prompting) Tj ET
+BT /F1 10 Tf 50 328 Td (---------------------------------------) Tj ET
+BT /F1 10 Tf 50 310 Td (The model is instructed to reason step by step before producing its) Tj ET
+BT /F1 10 Tf 50 292 Td (final answer. This improves accuracy on tasks requiring multi-step logic.) Tj ET
+BT /F1 10 Tf 50 274 Td () Tj ET
+BT /F1 10 Tf 50 256 Td (Implementation note:) Tj ET
+BT /F1 10 Tf 50 238 Td (  Add "Think step by step" or a structured reasoning prefix to the prompt.) Tj ET
+BT /F1 10 Tf 50 220 Td (  For structured outputs, separate the reasoning trace from the final) Tj ET
+BT /F1 10 Tf 50 202 Td (  answer using XML delimiters or JSON schema.) Tj ET
+BT /F1 10 Tf 50 184 Td () Tj ET
+BT /F1 10 Tf 50 166 Td (Pattern 3  Tool use / function calling) Tj ET
+BT /F1 10 Tf 50 148 Td (----------------------------------------) Tj ET
+BT /F1 10 Tf 50 130 Td (The model is given a set of available tools \(functions with JSON schemas\).) Tj ET
+endstream
+endobj
+8 0 obj
+<</Length 2636>>
+stream
+BT /F1 10 Tf 50 760 Td (It decides which tool to call, with which arguments, and the system) Tj ET
+BT /F1 10 Tf 50 742 Td (executes the tool and returns the result for the model to continue.) Tj ET
+BT /F1 10 Tf 50 724 Td () Tj ET
+BT /F1 10 Tf 50 706 Td (Use cases:) Tj ET
+BT /F1 10 Tf 50 688 Td (  - Reading from external APIs) Tj ET
+BT /F1 10 Tf 50 670 Td (  - Running calculations) Tj ET
+BT /F1 10 Tf 50 652 Td (  - Writing to databases) Tj ET
+BT /F1 10 Tf 50 634 Td (  - File operations) Tj ET
+BT /F1 10 Tf 50 616 Td () Tj ET
+BT /F1 10 Tf 50 598 Td (Safety consideration: validate all model-generated tool arguments before) Tj ET
+BT /F1 10 Tf 50 580 Td (execution. Never trust the model as the sole gatekeeper.) Tj ET
+BT /F1 10 Tf 50 562 Td () Tj ET
+BT /F1 10 Tf 50 544 Td (Pattern 4  Retrieval-Augmented Generation \(RAG\)) Tj ET
+BT /F1 10 Tf 50 526 Td (-------------------------------------------------) Tj ET
+BT /F1 10 Tf 50 508 Td (Instead of relying on the model's training data, RAG retrieves relevant) Tj ET
+BT /F1 10 Tf 50 490 Td (passages from a document store and injects them into the prompt as context.) Tj ET
+BT /F1 10 Tf 50 472 Td () Tj ET
+BT /F1 10 Tf 50 454 Td (Pipeline steps:) Tj ET
+BT /F1 10 Tf 50 436 Td (  1. Document ingestion: chunk, embed, and store documents in a vector index.) Tj ET
+BT /F1 10 Tf 50 418 Td (  2. Query: embed the user question, run similarity search.) Tj ET
+BT /F1 10 Tf 50 400 Td (  3. Retrieval: fetch top-k passages by cosine similarity score.) Tj ET
+BT /F1 10 Tf 50 382 Td (  4. Augmentation: inject passages into the prompt as grounding context.) Tj ET
+BT /F1 10 Tf 50 364 Td (  5. Generation: model answers based on retrieved context.) Tj ET
+BT /F1 10 Tf 50 346 Td () Tj ET
+BT /F1 10 Tf 50 328 Td (Key metrics:) Tj ET
+BT /F1 10 Tf 50 310 Td (  - Retrieval recall: are the relevant passages being found?) Tj ET
+BT /F1 10 Tf 50 292 Td (  - Answer groundedness: does the answer only use retrieved context?) Tj ET
+BT /F1 10 Tf 50 274 Td (  - Latency: embedding + retrieval adds overhead before the LLM call.) Tj ET
+BT /F1 10 Tf 50 256 Td () Tj ET
+BT /F1 10 Tf 50 238 Td (Pattern 5  Multi-agent workflows) Tj ET
+BT /F1 10 Tf 50 220 Td (----------------------------------) Tj ET
+BT /F1 10 Tf 50 202 Td (Multiple specialised agents handle different parts of a task and pass) Tj ET
+BT /F1 10 Tf 50 184 Td (results between each other. A supervisor or orchestrator coordinates flow.) Tj ET
+BT /F1 10 Tf 50 166 Td () Tj ET
+BT /F1 10 Tf 50 148 Td (Example pipeline \(content production\):) Tj ET
+BT /F1 10 Tf 50 130 Td (  Researcher -> Writer -> Critic -> Revision -> Groundedness check) Tj ET
+endstream
+endobj
+9 0 obj
+<</Length 2557>>
+stream
+BT /F1 10 Tf 50 760 Td () Tj ET
+BT /F1 10 Tf 50 742 Td (Frameworks:) Tj ET
+BT /F1 10 Tf 50 724 Td (  LangGraph: graph-based stateful agent orchestration) Tj ET
+BT /F1 10 Tf 50 706 Td (  CrewAI: role-based agent teams) Tj ET
+BT /F1 10 Tf 50 688 Td (  Custom: task queue with function-calling LLMs at each node) Tj ET
+BT /F1 10 Tf 50 670 Td () Tj ET
+BT /F1 10 Tf 50 652 Td (Trade-offs:) Tj ET
+BT /F1 10 Tf 50 634 Td (  Pro: each agent can be specialised and independently tested.) Tj ET
+BT /F1 10 Tf 50 616 Td (  Con: higher latency, harder to debug, failure modes compound.) Tj ET
+BT /F1 10 Tf 50 598 Td () Tj ET
+BT /F1 10 Tf 50 580 Td (Pattern 6  Human-in-the-loop) Tj ET
+BT /F1 10 Tf 50 562 Td (------------------------------) Tj ET
+BT /F1 10 Tf 50 544 Td (AI generates candidate outputs; a human reviews, edits, and approves) Tj ET
+BT /F1 10 Tf 50 526 Td (before the output is used or sent downstream.) Tj ET
+BT /F1 10 Tf 50 508 Td () Tj ET
+BT /F1 10 Tf 50 490 Td (This pattern is critical for:) Tj ET
+BT /F1 10 Tf 50 472 Td (  - High-stakes decisions \(legal, medical, financial\)) Tj ET
+BT /F1 10 Tf 50 454 Td (  - Brand-sensitive outputs \(marketing, customer communication\)) Tj ET
+BT /F1 10 Tf 50 436 Td (  - Tasks where AI error rate is too high for full automation) Tj ET
+BT /F1 10 Tf 50 418 Td () Tj ET
+BT /F1 10 Tf 50 400 Td (UX requirements:) Tj ET
+BT /F1 10 Tf 50 382 Td (  - Make AI-generated content clearly distinguishable from human content) Tj ET
+BT /F1 10 Tf 50 364 Td (  - Provide editable outputs, not read-only results) Tj ET
+BT /F1 10 Tf 50 346 Td (  - Show confidence signals and source attribution where possible) Tj ET
+BT /F1 10 Tf 50 328 Td (  - Enable fast rejection with one click) Tj ET
+BT /F1 10 Tf 50 310 Td () Tj ET
+BT /F1 10 Tf 50 292 Td (Security and safety considerations) Tj ET
+BT /F1 10 Tf 50 274 Td (-----------------------------------) Tj ET
+BT /F1 10 Tf 50 256 Td (Prompt injection: user-controlled content may contain instructions that) Tj ET
+BT /F1 10 Tf 50 238 Td (attempt to override the system prompt. Mitigate by:) Tj ET
+BT /F1 10 Tf 50 220 Td (  - Separating trusted instructions from untrusted user content with) Tj ET
+BT /F1 10 Tf 50 202 Td (    clear delimiters \(XML tags, role-based messages\)) Tj ET
+BT /F1 10 Tf 50 184 Td (  - Validating model outputs before acting on them) Tj ET
+BT /F1 10 Tf 50 166 Td (  - Never executing model-generated code without sandboxing) Tj ET
+BT /F1 10 Tf 50 148 Td () Tj ET
+BT /F1 10 Tf 50 130 Td (Data privacy: never send PII to external APIs without consent and) Tj ET
+endstream
+endobj
+10 0 obj
+<</Length 1447>>
+stream
+BT /F1 10 Tf 50 760 Td (appropriate data processing agreements.) Tj ET
+BT /F1 10 Tf 50 742 Td () Tj ET
+BT /F1 10 Tf 50 724 Td (Rate limiting: LLM APIs have token and request limits. Build retry logic,) Tj ET
+BT /F1 10 Tf 50 706 Td (back-off strategies, and per-user quotas into your system.) Tj ET
+BT /F1 10 Tf 50 688 Td () Tj ET
+BT /F1 10 Tf 50 670 Td (Evaluation) Tj ET
+BT /F1 10 Tf 50 652 Td (----------) Tj ET
+BT /F1 10 Tf 50 634 Td (AI workflows are hard to test with conventional unit tests. Evaluation) Tj ET
+BT /F1 10 Tf 50 616 Td (approaches include:) Tj ET
+BT /F1 10 Tf 50 598 Td (  - Golden set: curated input/output pairs reviewed by humans) Tj ET
+BT /F1 10 Tf 50 580 Td (  - LLM-as-judge: a second model scores outputs against criteria) Tj ET
+BT /F1 10 Tf 50 562 Td (  - User feedback: thumbs up/down, edit rate, task completion rate) Tj ET
+BT /F1 10 Tf 50 544 Td (  - Regression suite: run on every model or prompt change) Tj ET
+BT /F1 10 Tf 50 526 Td () Tj ET
+BT /F1 10 Tf 50 508 Td (Summary) Tj ET
+BT /F1 10 Tf 50 490 Td (-------) Tj ET
+BT /F1 10 Tf 50 472 Td (The right AI workflow pattern depends on task complexity, latency budget,) Tj ET
+BT /F1 10 Tf 50 454 Td (accuracy requirements, and safety constraints. Start with the simplest) Tj ET
+BT /F1 10 Tf 50 436 Td (pattern that works, measure its failure modes, and upgrade complexity) Tj ET
+BT /F1 10 Tf 50 418 Td (only when the simpler approach is proven insufficient.) Tj ET
+endstream
+endobj
+11 0 obj
+<</Type /Font /Subtype /Type1 /BaseFont /Courier>>
+endobj
+xref
+0 12
+0000000000 65535 f 
+0000000015 00000 n 
+0000000062 00000 n 
+0000000135 00000 n 
+0000000256 00000 n 
+0000000377 00000 n 
+0000000498 00000 n 
+0000000620 00000 n 
+0000003097 00000 n 
+0000005782 00000 n 
+0000008388 00000 n 
+0000009885 00000 n 
+trailer
+<</Size 12 /Root 1 0 R>>
+startxref
+9952
+%%EOF
