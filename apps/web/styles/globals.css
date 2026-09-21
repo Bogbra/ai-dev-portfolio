@@ -1,0 +1,263 @@
+@import "tailwindcss";
+
+/* =============================================================================
+   Design Tokens — Soft Monochrome
+   No colorful accents. Hierarchy through tone, weight, and spacing.
+   ============================================================================= */
+
+@theme {
+  /* --- Dark mode defaults --- */
+
+  --color-bg:               #111113;
+  --color-surface:          #18181b;
+  --color-surface-elevated: #222226;
+  --color-surface-raised:   #2c2c31;
+
+  --color-fg:               #f1f1ec;
+  --color-muted:            #b9b9b1;
+  --color-subtle:           #8a8a84;
+
+  --color-border:           #333338;
+  --color-border-strong:    #4a4a50;
+
+  /* Primary interaction: near-white inverted button in dark mode */
+  --color-accent:           #e8e8df;
+  --color-accent-fill:      #e8e8df;
+  --color-accent-hover:     #f1f1ec;
+  --color-accent-soft:      rgba(241, 241, 236, 0.08);
+
+  /* Secondary: raised surface (used for secondary buttons, tags) */
+  --color-secondary:        #2c2c31;
+  --color-secondary-hover:  #38383e;
+
+  /* Gold alias: subtle grey — used for quiet card accents (no warmth) */
+  --color-gold:             #8a8a84;
+  --color-gold-hover:       #9a9a94;
+
+  /* Semantic: monochrome — rely on labels and icons, not color alone */
+  --color-success:          #d8d8d0;
+  --color-warning:          #d8d8d0;
+  --color-danger:           #f1f1ec;
+  --color-danger-soft:      rgba(241, 241, 236, 0.10);
+  --color-info:             #d8d8d0;
+
+  /* Focus ring: high-contrast monochrome */
+  --color-focus:            #f1f1ec;
+
+  /* Soft tints */
+  --color-primary-soft:     rgba(241, 241, 236, 0.08);
+
+  /* --- Typography --- */
+  --font-display: var(--font-display-var, system-ui, sans-serif);
+  --font-body:    var(--font-sans-var, 'Arial', sans-serif);
+  --font-mono:    var(--font-mono-var, 'ui-monospace', monospace);
+
+  /* --- Type scale --- */
+  --text-xs:   0.75rem;
+  --text-sm:   0.875rem;
+  --text-base: 1rem;
+  --text-lg:   1.125rem;
+  --text-xl:   1.25rem;
+  --text-2xl:  1.5rem;
+  --text-3xl:  1.875rem;
+  --text-4xl:  2.25rem;
+  --text-5xl:  3rem;
+  --text-6xl:  3.75rem;
+  --text-7xl:  4.5rem;
+  --text-8xl:  6rem;
+
+  /* --- Font weights (non-standard, for variable fonts) --- */
+  --font-weight-650: 650;
+
+  /* --- Radius --- */
+  --radius-sm:   0.25rem;
+  --radius-md:   0.5rem;
+  --radius-lg:   1rem;
+  --radius-full: 9999px;
+
+  /* --- Shadow --- */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.25);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.3), 0 2px 4px -2px rgb(0 0 0 / 0.18);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.3), 0 4px 6px -4px rgb(0 0 0 / 0.15);
+
+  /* --- Motion --- */
+  --ease-out-expo:   cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-expo:    cubic-bezier(0.7, 0, 0.84, 0);
+  --ease-in-out:     cubic-bezier(0.45, 0, 0.55, 1);
+  --ease-spring:     cubic-bezier(0.34, 1.56, 0.64, 1);
+  --duration-fast:   150ms;
+  --duration-normal: 250ms;
+  --duration-slow:   400ms;
+  --duration-story:  600ms;
+}
+
+/* --- Light mode: system preference --- */
+@media (prefers-color-scheme: light) {
+  :root {
+    --color-bg:               #f2f1ec;
+    --color-surface:          #e8e7e1;
+    --color-surface-elevated: #deddd5;
+    --color-surface-raised:   #d2d1c8;
+
+    --color-fg:               #191918;
+    --color-muted:            #5d5d58;
+    --color-subtle:           #686861;
+
+    --color-border:           #c9c8bf;
+    --color-border-strong:    #aaa99f;
+
+    --color-accent:           #191918;
+    --color-accent-fill:      #191918;
+    --color-accent-hover:     #2b2b29;
+    --color-accent-soft:      rgba(25, 25, 24, 0.07);
+
+    --color-secondary:        #deddd5;
+    --color-secondary-hover:  #d2d1c8;
+
+    --color-gold:             #77776f;
+    --color-gold-hover:       #666660;
+
+    --color-success:          #2b2b29;
+    --color-warning:          #2b2b29;
+    --color-danger:           #191918;
+    --color-danger-soft:      rgba(25, 25, 24, 0.08);
+    --color-info:             #2b2b29;
+
+    --color-focus:            #191918;
+    --color-primary-soft:     rgba(25, 25, 24, 0.07);
+  }
+}
+
+[data-theme="light"] {
+  --color-bg:               #f2f1ec;
+  --color-surface:          #e8e7e1;
+  --color-surface-elevated: #deddd5;
+  --color-surface-raised:   #d2d1c8;
+
+  --color-fg:               #191918;
+  --color-muted:            #5d5d58;
+  --color-subtle:           #686861;
+
+  --color-border:           #c9c8bf;
+  --color-border-strong:    #aaa99f;
+
+  --color-accent:           #191918;
+  --color-accent-fill:      #191918;
+  --color-accent-hover:     #2b2b29;
+  --color-accent-soft:      rgba(25, 25, 24, 0.07);
+
+  --color-secondary:        #deddd5;
+  --color-secondary-hover:  #d2d1c8;
+
+  --color-gold:             #77776f;
+  --color-gold-hover:       #666660;
+
+  --color-success:          #2b2b29;
+  --color-warning:          #2b2b29;
+  --color-danger:           #191918;
+  --color-danger-soft:      rgba(25, 25, 24, 0.08);
+  --color-info:             #2b2b29;
+
+  --color-focus:            #191918;
+  --color-primary-soft:     rgba(25, 25, 24, 0.07);
+}
+
+[data-theme="dark"] {
+  --color-bg:               #111113;
+  --color-surface:          #18181b;
+  --color-surface-elevated: #222226;
+  --color-surface-raised:   #2c2c31;
+
+  --color-fg:               #f1f1ec;
+  --color-muted:            #b9b9b1;
+  --color-subtle:           #8a8a84;
+
+  --color-border:           #333338;
+  --color-border-strong:    #4a4a50;
+
+  --color-accent:           #e8e8df;
+  --color-accent-fill:      #e8e8df;
+  --color-accent-hover:     #f1f1ec;
+  --color-accent-soft:      rgba(241, 241, 236, 0.08);
+
+  --color-secondary:        #2c2c31;
+  --color-secondary-hover:  #38383e;
+
+  --color-gold:             #8a8a84;
+  --color-gold-hover:       #9a9a94;
+
+  --color-success:          #d8d8d0;
+  --color-warning:          #d8d8d0;
+  --color-danger:           #f1f1ec;
+  --color-danger-soft:      rgba(241, 241, 236, 0.10);
+  --color-info:             #d8d8d0;
+
+  --color-focus:            #f1f1ec;
+  --color-primary-soft:     rgba(241, 241, 236, 0.08);
+}
+
+/* =============================================================================
+   Base Reset
+   ============================================================================= */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  scroll-behavior: smooth;
+  font-optical-sizing: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+body {
+  background-color: var(--color-bg);
+  color: var(--color-fg);
+  font-family: var(--font-body);
+  line-height: 1.6;
+  min-height: 100dvh;
+  font-feature-settings: 'kern' 1;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+  text-wrap: balance;
+  font-feature-settings: 'kern' 1;
+}
+
+p {
+  text-wrap: pretty;
+}
+
+/* Dot grid texture — viewport-relative so it stays aligned with the fixed
+   DotGridSpotlight overlay at all scroll positions. */
+section {
+  background-image: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--color-border) 40%, transparent) 1px,
+    transparent 1px
+  );
+  background-size: 40px 40px;
+  background-attachment: fixed;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 3px;
+  border-radius: var(--radius-sm);
+}
+
+::selection {
+  background-color: rgba(191, 255, 0, 0.38);
+  color: inherit;
+}
