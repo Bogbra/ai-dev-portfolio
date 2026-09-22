@@ -35,6 +35,7 @@ export const en = {
     studies: [
       {
         id:       'llm-interface',
+        slug:     'ai-operations-workflow-agent',
         label:    '01',
         title:    'AI Operations Workflow Agent',
         angle:    'A controlled LLM workflow: upload contacts, request an action, get a structured reviewable draft.',
@@ -45,6 +46,7 @@ export const en = {
       },
       {
         id:       'ai-tooling',
+        slug:     'research-to-post-multi-agent-workflow',
         label:    '02',
         title:    'Research-to-Post Multi-Agent Workflow',
         angle:    'A five-stage LangGraph workflow: research, write, critique, revise, and check groundedness.',
@@ -55,6 +57,7 @@ export const en = {
       },
       {
         id:       'ai-system',
+        slug:     'research-rag-assistant',
         label:    '03',
         title:    'Agentic RAG Research Assistant',
         angle:    'PDF upload, chunking, embeddings, cosine retrieval, and retrieval-constrained streaming answers with visible sources.',
@@ -218,6 +221,7 @@ export const de: typeof en = {
     studies: [
       {
         id:       'llm-interface',
+        slug:     'ai-operations-workflow-agent',
         label:    '01',
         title:    'AI Operations Workflow Agent',
         angle:    'Kontrollierter LLM-Workflow: CSV/XLSX hochladen, Kontakte auflösen, strukturierten Entwurf generieren.',
@@ -228,6 +232,7 @@ export const de: typeof en = {
       },
       {
         id:       'ai-tooling',
+        slug:     'research-to-post-multi-agent-workflow',
         label:    '02',
         title:    'Research-to-Post Multi-Agent Workflow',
         angle:    'Fünfstufiger LangGraph-Workflow: Recherche, Entwurf, Kritik, Revision und Groundedness Check.',
@@ -238,6 +243,7 @@ export const de: typeof en = {
       },
       {
         id:       'ai-system',
+        slug:     'research-rag-assistant',
         label:    '03',
         title:    'Agentic RAG Research Assistant',
         angle:    'PDF-Upload, Chunking, Embeddings, Retrieval und retrieval-beschränkte Antworten mit sichtbaren Quellen per SSE Streaming.',

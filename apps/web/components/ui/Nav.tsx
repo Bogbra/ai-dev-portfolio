@@ -184,9 +184,6 @@ export function Nav() {
         {menuOpen && (
           <motion.div
             id="mobile-menu"
-            role="dialog"
-            aria-modal="false"
-            aria-label="Mobile navigation"
             className="md:hidden fixed top-16 left-0 right-0 z-40 bg-bg border-b border-border"
             initial={{ opacity: 0, y: prefersReduced ? 0 : -6 }}
             animate={{ opacity: 1, y: 0 }}
@@ -194,7 +191,7 @@ export function Nav() {
             transition={{ duration: prefersReduced ? 0 : 0.18, ease: [0.16, 1, 0.3, 1] }}
           >
             <nav
-              aria-label={t.nav.openMenu}
+              aria-label="Mobile navigation"
               className="px-8 py-2 max-w-[1920px] mx-auto"
             >
               <ul role="list" className="divide-y divide-border">

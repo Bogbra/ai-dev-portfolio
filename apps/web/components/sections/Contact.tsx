@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import { useInView } from 'motion/react';
+import { useInView, useReducedMotion } from 'motion/react';
 import { motion } from 'motion/react';
 import { easings } from '@/components/motion/easings';
 import { contactSchema } from '@ai/types';
@@ -20,6 +20,7 @@ type FieldErrors = {
 
 export function ContactSection() {
   const { t } = useLang();
+  const prefersReduced = useReducedMotion() ?? false;
   const ref = useRef<HTMLDivElement>(null);
   const inView = useInView(ref, { once: true, margin: '-80px' });
 
@@ -78,9 +79,9 @@ export function ContactSection() {
       <div className="max-w-[1920px] mx-auto">
         <motion.div
           ref={ref}
-          initial={{ opacity: 0, y: 16 }}
-          animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 16 }}
-          transition={{ duration: 0.6, ease: easings.outExpo }}
+          initial={{ opacity: 0, y: prefersReduced ? 0 : 16 }}
+          animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: prefersReduced ? 0 : 16 }}
+          transition={{ duration: prefersReduced ? 0 : 0.6, ease: easings.outExpo }}
           className="mb-16 md:max-w-2xl"
         >
           <p className="font-mono text-sm text-muted tracking-[0.18em] uppercase mb-4">
@@ -92,9 +93,9 @@ export function ContactSection() {
         </motion.div>
 
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-          transition={{ duration: 0.7, ease: easings.outExpo, delay: 0.15 }}
+          initial={{ opacity: 0, y: prefersReduced ? 0 : 20 }}
+          animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: prefersReduced ? 0 : 20 }}
+          transition={{ duration: prefersReduced ? 0 : 0.7, ease: easings.outExpo, delay: prefersReduced ? 0 : 0.15 }}
           className="w-full md:max-w-xl"
         >
           {formState === 'success' ? (

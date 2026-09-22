@@ -1,15 +1,38 @@
 'use client';
 
 import { useRef } from 'react';
-import { motion, useInView } from 'motion/react';
+import dynamic from 'next/dynamic';
+import { motion, useInView, useReducedMotion } from 'motion/react';
 import { easings } from '@/components/motion/easings';
 import { useLang } from '@/lib/i18n';
-import { VoiceAgentLab } from '@/components/labs/VoiceAgentLab';
-import { SeoStrategyLab } from '@/components/labs/SeoStrategyLab';
-import { McpLab } from '@/components/labs/McpLab';
+
+// Dynamically imported, not statically: all three are substantial client
+// components (form state, Zod validation; Voice additionally pulls in
+// MediaRecorder handling) sitting below the fold — a visitor who never
+// scrolls to Labs shouldn't pay for their JS in the initial bundle.
+// ssr: false is safe here since none of the three render content a
+// crawler needs (the section heading/description above them is already
+// server-rendered static text).
+const labLoadingFallback = (
+  <div className="h-40 rounded-md border border-border/50 bg-surface animate-pulse" aria-hidden="true" />
+);
+
+const VoiceAgentLab = dynamic(
+  () => import('@/components/labs/VoiceAgentLab').then((m) => m.VoiceAgentLab),
+  { loading: () => labLoadingFallback, ssr: false },
+);
+const SeoStrategyLab = dynamic(
+  () => import('@/components/labs/SeoStrategyLab').then((m) => m.SeoStrategyLab),
+  { loading: () => labLoadingFallback, ssr: false },
+);
+const McpLab = dynamic(
+  () => import('@/components/labs/McpLab').then((m) => m.McpLab),
+  { loading: () => labLoadingFallback, ssr: false },
+);
 
 export function LabsSection() {
   const { t } = useLang();
+  const prefersReduced = useReducedMotion() ?? false;
   const headingRef = useRef<HTMLDivElement>(null);
   const headingInView = useInView(headingRef, { once: true, margin: '-60px' });
 
@@ -18,9 +41,9 @@ export function LabsSection() {
       <div className="max-w-[1920px] mx-auto">
         <motion.div
           ref={headingRef}
-          initial={{ opacity: 0, y: 16 }}
-          animate={headingInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 16 }}
-          transition={{ duration: 0.6, ease: easings.outExpo }}
+          initial={{ opacity: 0, y: prefersReduced ? 0 : 16 }}
+          animate={headingInView ? { opacity: 1, y: 0 } : { opacity: 0, y: prefersReduced ? 0 : 16 }}
+          transition={{ duration: prefersReduced ? 0 : 0.6, ease: easings.outExpo }}
           className="mb-16 md:max-w-2xl"
         >
           <p className="font-mono text-sm text-muted tracking-[0.18em] uppercase mb-4">
@@ -32,9 +55,9 @@ export function LabsSection() {
         </motion.div>
 
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={headingInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-          transition={{ duration: 0.6, ease: easings.outExpo, delay: 0.15 }}
+          initial={{ opacity: 0, y: prefersReduced ? 0 : 20 }}
+          animate={headingInView ? { opacity: 1, y: 0 } : { opacity: 0, y: prefersReduced ? 0 : 20 }}
+          transition={{ duration: prefersReduced ? 0 : 0.6, ease: easings.outExpo, delay: prefersReduced ? 0 : 0.15 }}
         >
           <div className="flex items-center gap-3 mb-4">
             <span className="font-mono text-sm text-muted tracking-widest uppercase">

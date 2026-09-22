@@ -12,14 +12,9 @@ const ACCENTS = [
   'var(--color-subtle)',
 ];
 
-const SLUGS: Record<string, string> = {
-  'llm-interface': 'ai-operations-workflow-agent',
-  'ai-tooling':    'research-to-post-multi-agent-workflow',
-  'ai-system':     'research-rag-assistant',
-};
-
 type CaseStudy = {
   id: string;
+  slug: string;
   label: string;
   title: string;
   angle: string;
@@ -165,7 +160,7 @@ export function SelectedWorkSection() {
   const studies: CaseStudy[] = t.work.studies.map((s, i) => ({
     ...s,
     accent: ACCENTS[i] ?? 'var(--color-fg)',
-    href: `/work/${SLUGS[s.id] ?? '#'}`,
+    href: `/work/${s.slug}`,
   }));
 
   return (
