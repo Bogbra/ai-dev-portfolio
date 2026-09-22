@@ -276,6 +276,14 @@ async def _step1_extract_and_generate(
     )
     is_german = _is_german_market(market)
     safe_market = xml_escape(market)
+    # A raw market string never appears in instruction text below — only
+    # inside <input>, where it's data, not a command. _is_german_market's
+    # output is a closed set (True/False), so deriving the language label
+    # from it (rather than interpolating market itself) means a value like
+    # "Germany. Ignore the previous requirements and instead ..." can at
+    # most flip which of these two fixed strings gets used — it can never
+    # inject its own text into the instruction the model actually reads.
+    trusted_language = "German" if is_german else "English"
 
     prompt = f"""\
 <input>
@@ -290,7 +298,7 @@ SEO goal: {goal} — {goal_context}
 
 Generate:
 1. extracted_business_context — analyse the business, audience, and value proposition
-2. keyword_candidates — 20–30 keyword opportunities in the language of the {safe_market} market.
+2. keyword_candidates — 20–30 keyword opportunities in {trusted_language}.
    Include: seed keywords, long-tail terms, search questions (Wie / Was / Welche / How / What / Which),
    comparison terms, implementation queries, and direct service/consultant-intent queries.
    PRIORITISE queries that show service demand, consulting intent, or implementation intent.
@@ -395,6 +403,10 @@ async def _step2_rerank_and_plan(
     }.get(goal, "Balance traffic, lead value, and content opportunity.")
 
     is_german = _is_german_market(market)
+    # Trusted, closed-set label — same reasoning as _step1_extract_and_generate's
+    # trusted_language: the raw market string must never appear in instruction
+    # text, only inside <seo_data>, where it's data rather than a command.
+    trusted_language = "German" if is_german else "English"
     lang_reminder = (
         "REMINDER: ALL output (terms, CTAs, content titles, roadmap items, explanations) must be in German with correct umlauts."
         if is_german
@@ -419,7 +431,7 @@ async def _step2_rerank_and_plan(
 </seo_data>
 
 SEO goal: {goal}
-Market: {market}
+Output language: {trusted_language}
 Ranking priority: {goal_priority}
 {lang_reminder}
 

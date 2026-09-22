@@ -21,12 +21,21 @@ establishes that the party who set it is actually the proxy, not a client
 connecting directly. Earlier versions of this function trusted X-Real-IP /
 X-Forwarded-For purely on presence, with no check on who sent them — a
 client with direct network access to this service could set either header
-itself and have it accepted outright. Railway's edge always connects from
-100.0.0.0/8 (see apps/api/src/server.ts's trustProxy comment for the same
-reasoning on the Fastify side), so headers are honored only when the
-immediate TCP peer (request.client.host — not attacker-settable) falls in
-that range; otherwise the socket peer itself is returned, ignoring whatever
-the headers claim.
+itself and have it accepted outright. Headers are now honored only when the
+immediate TCP peer (request.client.host — not attacker-settable) falls
+inside settings.TRUSTED_PROXY_CIDRS (default "100.0.0.0/8", matching
+apps/api/src/server.ts's trustProxy for the same reasoning on the Fastify
+side); otherwise the socket peer itself is returned, ignoring whatever the
+headers claim.
+
+That default is this service's own observation of where Railway's edge has
+connected from, not a documented, permanent guarantee from Railway — it's
+configurable (settings.TRUSTED_PROXY_CIDRS, comma-separated) precisely
+because it could change or need widening without a code change. If traffic
+ever starts resolving to the untrusted-peer fallback in production (visible
+as every visitor sharing one rate-limit bucket, or the opposite — far more
+buckets than real visitors), that range is the first thing to re-verify
+against the live deployment.
 
 What we know about Railway's actual behavior: it's contradictory and not
 formally documented. Railway support threads describe two different models:
@@ -57,23 +66,21 @@ volume ever makes that discrepancy worth chasing down.
 
 from __future__ import annotations
 
-from ipaddress import ip_address, ip_network
+from ipaddress import ip_address
 
 from starlette.requests import Request
 
-# Railway's edge proxy always connects from this range — see the module
-# docstring's "Trust boundary" section and apps/api/src/server.ts's
-# trustProxy comment for the matching Fastify-side reasoning.
-_TRUSTED_PROXY_NETWORK = ip_network("100.0.0.0/8")
+from settings import settings
 
 
 def _is_trusted_proxy_peer(peer_host: str) -> bool:
     try:
-        return ip_address(peer_host) in _TRUSTED_PROXY_NETWORK
+        peer = ip_address(peer_host)
     except ValueError:
         # Not a parseable IP (e.g. a unix socket path in some ASGI test
-        # setups) — never a legitimate Railway peer, so never trusted.
+        # setups) — never a legitimate proxy peer, so never trusted.
         return False
+    return any(peer in network for network in settings.get_trusted_proxy_networks())
 
 
 def get_client_ip(request: Request) -> str:

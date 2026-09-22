@@ -33,6 +33,17 @@ from settings import settings
 router = APIRouter()
 limiter = Limiter(key_func=get_client_ip)
 
+# Caps how many /rag/upload requests parse PDFs and create embeddings at
+# once — the per-route rate limit bounds requests per IP over time, not how
+# many separate visitors' uploads run concurrently. Each held request can
+# already carry up to MAX_TOTAL_UPLOAD_MB of decoded PDF bytes plus their
+# extracted text, chunks and embeddings in memory at once; without this, N
+# simultaneous uploads (from N different IPs, so the per-route rate limit
+# doesn't apply) multiply that by N against the container's fixed memory
+# limit. 2 is deliberately low for this portfolio's expected traffic, not
+# a throughput target.
+_RAG_UPLOAD_SEMAPHORE = asyncio.Semaphore(2)
+
 # ─── Session storage ──────────────────────────────────────────────────────────
 # Each session gets its own in-memory SQLite database with the sqlite-vec
 # extension loaded, using a vec0 virtual table for k-nearest-neighbor search
@@ -257,6 +268,14 @@ def _mock_embed(text: str) -> list[float]:
 # ─── PDF text extraction ──────────────────────────────────────────────────────
 
 
+# A compressed PDF can decompress into far more extracted text than its
+# upload size suggests — MAX_UPLOAD_MB bounds the compressed bytes, not
+# what pypdf pulls out of them. This bounds total characters per file
+# regardless of page count; 3M chars is already many times more than any
+# legitimate document this lab is meant to demo would produce.
+_MAX_EXTRACTED_CHARS_PER_FILE = 3_000_000
+
+
 def _extract_pdf_pages(data: bytes) -> list[tuple[int, str]]:
     """Returns (1-indexed page number, page text) pairs instead of one
     joined blob — chunking per page (see the upload loop) lets a citation
@@ -266,7 +285,15 @@ def _extract_pdf_pages(data: bytes) -> list[tuple[int, str]]:
     from pypdf import PdfReader
 
     reader = PdfReader(io.BytesIO(data))
-    return [(i + 1, page.extract_text() or "") for i, page in enumerate(reader.pages[:80])]
+    pages: list[tuple[int, str]] = []
+    total_chars = 0
+    for i, page in enumerate(reader.pages[:80]):
+        text = page.extract_text() or ""
+        pages.append((i + 1, text))
+        total_chars += len(text)
+        if total_chars > _MAX_EXTRACTED_CHARS_PER_FILE:
+            break
+    return pages
 
 
 # ─── Real embeddings (OpenAI) ─────────────────────────────────────────────────
@@ -401,170 +428,184 @@ async def rag_upload(request: Request) -> JSONResponse:
     max_bytes = settings.MAX_UPLOAD_MB * 1024 * 1024
     max_total = settings.MAX_TOTAL_UPLOAD_MB * 1024 * 1024
 
-    all_chunks: list[_ChunkRecord] = []
-    all_embeddings: list[list[float]] = []
-    total_bytes = 0
+    async with _RAG_UPLOAD_SEMAPHORE:
+        all_chunks: list[_ChunkRecord] = []
+        all_embeddings: list[list[float]] = []
+        total_bytes = 0
 
-    for file in req.files:
-        ext = file.filename.lower().rsplit(".", 1)[-1] if "." in file.filename else ""
-        if ext != "pdf":
-            return JSONResponse(
-                {"status": "error", "message": f"{file.filename}: only PDF files are accepted."},
-                status_code=400,
-            )
+        for file in req.files:
+            ext = file.filename.lower().rsplit(".", 1)[-1] if "." in file.filename else ""
+            if ext != "pdf":
+                return JSONResponse(
+                    {
+                        "status": "error",
+                        "message": f"{file.filename}: only PDF files are accepted.",
+                    },
+                    status_code=400,
+                )
 
-        try:
-            raw = base64.b64decode(file.content, validate=True)
-        except Exception:
-            return JSONResponse(
-                {"status": "error", "message": "Invalid file encoding."}, status_code=400
-            )
-
-        if not raw.startswith(b"%PDF-"):
-            return JSONResponse(
-                {"status": "error", "message": f"{file.filename} is not a valid PDF file."},
-                status_code=400,
-            )
-
-        if len(raw) > max_bytes:
-            return JSONResponse(
-                {
-                    "status": "error",
-                    "message": f"{file.filename} exceeds the {settings.MAX_UPLOAD_MB} MB limit.",
-                },
-                status_code=400,
-            )
-
-        total_bytes += len(raw)
-        if total_bytes > max_total:
-            return JSONResponse(
-                {
-                    "status": "error",
-                    "message": f"Total upload size exceeds {settings.MAX_TOTAL_UPLOAD_MB} MB.",
-                },
-                status_code=400,
-            )
-
-        try:
-            # pypdf parsing is synchronous CPU work; run it off the event loop
-            # so one slow/adversarial PDF can't stall every concurrent request.
-            pdf_pages = await asyncio.to_thread(_extract_pdf_pages, raw)
-        except Exception:
-            return JSONResponse(
-                {
-                    "status": "error",
-                    "message": f"Could not parse {file.filename}. Please ensure it is a valid PDF.",
-                },
-                status_code=400,
-            )
-
-        if not any(text.strip() for _, text in pdf_pages):
-            return JSONResponse(
-                {
-                    "status": "error",
-                    "message": f"{file.filename} appears to contain no readable text. Scanned image PDFs are not supported.",
-                },
-                status_code=400,
-            )
-
-        # Chunked per page (not across the whole joined document) so each
-        # chunk can carry the page it actually came from — a chunk can no
-        # longer span a page break, which trades a small amount of
-        # cross-page continuity for citations that point somewhere real.
-        chunks_per_file = settings.MAX_CHUNKS // len(req.files)
-        raw_chunks: list[str] = []
-        chunk_pages: list[int] = []
-        for page_number, page_text in pdf_pages:
-            if not page_text.strip():
-                continue
-            for chunk in _chunk_text(page_text):
-                raw_chunks.append(chunk)
-                chunk_pages.append(page_number)
-                if len(raw_chunks) >= chunks_per_file:
-                    break
-            if len(raw_chunks) >= chunks_per_file:
-                break
-
-        use_openai = bool(settings.OPENAI_API_KEY)
-        if use_openai:
             try:
-                embeddings = await _embed_openai(
-                    settings.OPENAI_API_KEY,
-                    settings.OPENAI_BASE_URL,
-                    settings.EMBEDDING_MODEL,
-                    raw_chunks,
-                )  # type: ignore[arg-type]
+                raw = base64.b64decode(file.content, validate=True)
+            except Exception:
+                return JSONResponse(
+                    {"status": "error", "message": "Invalid file encoding."}, status_code=400
+                )
+
+            if not raw.startswith(b"%PDF-"):
+                return JSONResponse(
+                    {"status": "error", "message": f"{file.filename} is not a valid PDF file."},
+                    status_code=400,
+                )
+
+            if len(raw) > max_bytes:
+                return JSONResponse(
+                    {
+                        "status": "error",
+                        "message": f"{file.filename} exceeds the {settings.MAX_UPLOAD_MB} MB limit.",
+                    },
+                    status_code=400,
+                )
+
+            total_bytes += len(raw)
+            if total_bytes > max_total:
+                return JSONResponse(
+                    {
+                        "status": "error",
+                        "message": f"Total upload size exceeds {settings.MAX_TOTAL_UPLOAD_MB} MB.",
+                    },
+                    status_code=400,
+                )
+
+            try:
+                # pypdf parsing is synchronous CPU work; run it off the event loop
+                # so one slow/adversarial PDF can't stall every concurrent request.
+                pdf_pages = await asyncio.to_thread(_extract_pdf_pages, raw)
             except Exception:
                 return JSONResponse(
                     {
                         "status": "error",
-                        "message": "Failed to create embeddings. Please try again.",
+                        "message": f"Could not parse {file.filename}. Please ensure it is a valid PDF.",
                     },
-                    status_code=500,
+                    status_code=400,
                 )
-        else:
-            embeddings = [_mock_embed(c) for c in raw_chunks]
 
-        # embeddings is guaranteed len(raw_chunks) long here: the mock
-        # branch produces exactly one per chunk, and the live branch either
-        # matches (validated in _embed_openai) or the request already
-        # returned a 500 above — no silent per-chunk mock fallback for a
-        # live-mode response that came back short or malformed.
-        for i, chunk in enumerate(raw_chunks):
-            all_chunks.append(
-                _ChunkRecord(text=chunk, filename=file.filename, page_number=chunk_pages[i])
+            if not any(text.strip() for _, text in pdf_pages):
+                return JSONResponse(
+                    {
+                        "status": "error",
+                        "message": f"{file.filename} appears to contain no readable text. Scanned image PDFs are not supported.",
+                    },
+                    status_code=400,
+                )
+
+            # Chunked per page (not across the whole joined document) so each
+            # chunk can carry the page it actually came from — a chunk can no
+            # longer span a page break, which trades a small amount of
+            # cross-page continuity for citations that point somewhere real.
+            chunks_per_file = settings.MAX_CHUNKS // len(req.files)
+            raw_chunks: list[str] = []
+            chunk_pages: list[int] = []
+            for page_number, page_text in pdf_pages:
+                if not page_text.strip():
+                    continue
+                for chunk in _chunk_text(page_text):
+                    raw_chunks.append(chunk)
+                    chunk_pages.append(page_number)
+                    if len(raw_chunks) >= chunks_per_file:
+                        break
+                if len(raw_chunks) >= chunks_per_file:
+                    break
+
+            if not raw_chunks:
+                # Pages had extractable text (checked above), but every chunk
+                # from them was too short to survive _chunk_text's 20-character
+                # filter — a real, if unusual, outcome (e.g. a page of mostly
+                # headers/whitespace). Otherwise this fell through to the
+                # embeddings call with an empty list, making the response
+                # depend on how the embedding provider happens to handle that
+                # rather than on this app's own "no usable text" check below.
+                continue
+
+            use_openai = bool(settings.OPENAI_API_KEY)
+            if use_openai:
+                try:
+                    embeddings = await _embed_openai(
+                        settings.OPENAI_API_KEY,
+                        settings.OPENAI_BASE_URL,
+                        settings.EMBEDDING_MODEL,
+                        raw_chunks,
+                    )  # type: ignore[arg-type]
+                except Exception:
+                    return JSONResponse(
+                        {
+                            "status": "error",
+                            "message": "Failed to create embeddings. Please try again.",
+                        },
+                        status_code=500,
+                    )
+            else:
+                embeddings = [_mock_embed(c) for c in raw_chunks]
+
+            # embeddings is guaranteed len(raw_chunks) long here: the mock
+            # branch produces exactly one per chunk, and the live branch either
+            # matches (validated in _embed_openai) or the request already
+            # returned a 500 above — no silent per-chunk mock fallback for a
+            # live-mode response that came back short or malformed.
+            for i, chunk in enumerate(raw_chunks):
+                all_chunks.append(
+                    _ChunkRecord(text=chunk, filename=file.filename, page_number=chunk_pages[i])
+                )
+                all_embeddings.append(embeddings[i])
+
+        if not all_chunks:
+            return JSONResponse(
+                {
+                    "status": "error",
+                    "message": "No usable text segments were found in the uploaded document(s).",
+                },
+                status_code=400,
             )
-            all_embeddings.append(embeddings[i])
 
-    if not all_chunks:
+        # Server-generated, not client-supplied: a client choosing its own ID
+        # could target or overwrite another session's ID that it had learned.
+        session_id = str(uuid.uuid4())
+        vec_conn = _build_vector_index(all_embeddings)
+        await _store_session(session_id, _Session(all_chunks, vec_conn))
+
+        use_openai_flag = bool(settings.OPENAI_API_KEY)
         return JSONResponse(
             {
-                "status": "error",
-                "message": "No usable text segments were found in the uploaded document(s).",
-            },
-            status_code=400,
+                "status": "indexed",
+                "sessionId": session_id,
+                "documentCount": len(req.files),
+                "chunkCount": len(all_chunks),
+                "pipelineSteps": [
+                    {
+                        "name": "Parse PDFs",
+                        "status": "done",
+                        "detail": f"{len(req.files)} document{'s' if len(req.files) > 1 else ''} extracted",
+                    },
+                    {
+                        "name": "Split into chunks",
+                        "status": "done",
+                        "detail": f"{len(all_chunks)} text segments created",
+                    },
+                    {
+                        "name": "Create embeddings",
+                        "status": "done",
+                        "detail": "Semantic embeddings generated"
+                        if use_openai_flag
+                        else "Keyword embeddings (demo mode)",
+                    },
+                    {
+                        "name": "Build retrieval index",
+                        "status": "done",
+                        "detail": "Index ready for questions",
+                    },
+                ],
+                "mockMode": not use_openai_flag,
+            }
         )
-
-    # Server-generated, not client-supplied: a client choosing its own ID
-    # could target or overwrite another session's ID that it had learned.
-    session_id = str(uuid.uuid4())
-    vec_conn = _build_vector_index(all_embeddings)
-    await _store_session(session_id, _Session(all_chunks, vec_conn))
-
-    use_openai_flag = bool(settings.OPENAI_API_KEY)
-    return JSONResponse(
-        {
-            "status": "indexed",
-            "sessionId": session_id,
-            "documentCount": len(req.files),
-            "chunkCount": len(all_chunks),
-            "pipelineSteps": [
-                {
-                    "name": "Parse PDFs",
-                    "status": "done",
-                    "detail": f"{len(req.files)} document{'s' if len(req.files) > 1 else ''} extracted",
-                },
-                {
-                    "name": "Split into chunks",
-                    "status": "done",
-                    "detail": f"{len(all_chunks)} text segments created",
-                },
-                {
-                    "name": "Create embeddings",
-                    "status": "done",
-                    "detail": "Semantic embeddings generated"
-                    if use_openai_flag
-                    else "Keyword embeddings (demo mode)",
-                },
-                {
-                    "name": "Build retrieval index",
-                    "status": "done",
-                    "detail": "Index ready for questions",
-                },
-            ],
-            "mockMode": not use_openai_flag,
-        }
-    )
 
 
 # ─── POST /rag/ask ────────────────────────────────────────────────────────────

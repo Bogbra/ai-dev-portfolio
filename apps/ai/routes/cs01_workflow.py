@@ -762,13 +762,22 @@ async def run_workflow(request: Request) -> JSONResponse:
             }
         )
 
-    # Optional web context enrichment
-    web_context: str | None = None
-    if req.useWebContext and settings.TAVILY_API_KEY:
-        web_context = await _fetch_web_context(settings.TAVILY_API_KEY, req.request)
-
     try:
         if settings.OPENAI_API_KEY:
+            # Web context enrichment only makes sense — and must only call
+            # Tavily, a third party — when it will actually reach the
+            # model. Fetching it unconditionally (checked only against
+            # useWebContext/TAVILY_API_KEY, not OPENAI_API_KEY) meant a
+            # deployment with a Tavily key but no OpenAI key still made a
+            # real, billable third-party call whose result then went
+            # straight into _mock_workflow, which never reads it —
+            # contradicting both this route's own mock-mode contract and
+            # the privacy policy's "fully local, no third-party
+            # transmission" claim for when no key is configured.
+            web_context: str | None = None
+            if req.useWebContext and settings.TAVILY_API_KEY:
+                web_context = await _fetch_web_context(settings.TAVILY_API_KEY, req.request)
+
             client = make_openai_client(settings.OPENAI_API_KEY, settings.OPENAI_BASE_URL)
             result = await _run_workflow(
                 client,

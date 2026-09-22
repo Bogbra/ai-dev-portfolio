@@ -1,3 +1,4 @@
+from ipaddress import IPv4Network, IPv6Network, ip_network
 from typing import Optional
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -71,11 +72,22 @@ class Settings(BaseSettings):
     MCP_LIVE_CALL_LIMIT: int = 3
     MCP_LIVE_QUOTA_WINDOW_SECONDS: int = 86400
 
+    # client_ip.get_client_ip only honors X-Real-IP/X-Forwarded-For from a
+    # socket peer inside one of these CIDRs (Railway's edge, as currently
+    # observed — not a documented, permanent guarantee; see client_ip.py's
+    # module docstring). Configurable rather than hardcoded so a change on
+    # Railway's side, or a move to a different host, doesn't require a code
+    # change to keep rate-limit keys spoof-resistant.
+    TRUSTED_PROXY_CIDRS: str = "100.0.0.0/8"
+
     def get_allowed_origins(self) -> list[str]:
         return [o.strip() for o in self.ALLOWED_ORIGINS.split(",")]
 
     def get_mcp_allowed_hosts(self) -> list[str]:
         return [h.strip() for h in self.MCP_ALLOWED_HOSTS.split(",")]
+
+    def get_trusted_proxy_networks(self) -> list[IPv4Network | IPv6Network]:
+        return [ip_network(c.strip()) for c in self.TRUSTED_PROXY_CIDRS.split(",") if c.strip()]
 
 
 settings = Settings()

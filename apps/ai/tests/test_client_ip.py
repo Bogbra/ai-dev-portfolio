@@ -16,6 +16,7 @@ from __future__ import annotations
 from starlette.requests import Request
 
 from client_ip import get_client_ip
+from settings import settings
 
 _TRUSTED_PEER = "100.64.0.1"  # inside 100.0.0.0/8 — stand-in for Railway's edge
 _UNTRUSTED_PEER = "10.0.0.5"  # outside the trusted range — a direct connection
@@ -104,3 +105,27 @@ def test_falls_back_to_socket_peer_when_no_proxy_headers_present():
 def test_falls_back_to_localhost_when_nothing_is_available():
     request = _make_request({}, client=None)
     assert get_client_ip(request) == "127.0.0.1"
+
+
+# ─── TRUSTED_PROXY_CIDRS is configurable, not hardcoded ────────────────────────
+
+
+def test_trusted_range_is_read_from_settings_not_hardcoded(monkeypatch):
+    monkeypatch.setattr(settings, "TRUSTED_PROXY_CIDRS", "203.0.113.0/24")
+
+    # The usual "trusted" peer no longer qualifies under the new config.
+    request = _make_request({"x-forwarded-for": "9.9.9.9"}, client=(_TRUSTED_PEER, 1))
+    assert get_client_ip(request) == _TRUSTED_PEER
+
+    # A peer inside the newly configured range is trusted instead.
+    request = _make_request({"x-forwarded-for": "9.9.9.9"}, client=("203.0.113.50", 1))
+    assert get_client_ip(request) == "9.9.9.9"
+
+
+def test_trusted_range_supports_multiple_comma_separated_cidrs(monkeypatch):
+    monkeypatch.setattr(settings, "TRUSTED_PROXY_CIDRS", "100.0.0.0/8,203.0.113.0/24")
+
+    a = _make_request({"x-forwarded-for": "1.1.1.1"}, client=(_TRUSTED_PEER, 1))
+    b = _make_request({"x-forwarded-for": "2.2.2.2"}, client=("203.0.113.50", 1))
+    assert get_client_ip(a) == "1.1.1.1"
+    assert get_client_ip(b) == "2.2.2.2"

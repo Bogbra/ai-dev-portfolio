@@ -86,7 +86,7 @@ These are demo-scale constraints, not architectural limits. A commercial deploym
 - **CSP** — per-request nonce via Next.js Middleware (`script-src 'nonce-...' 'strict-dynamic'`)
 - **Helmet** on Fastify; explicit CORS, no-store responses, body-size limits and rate limiting on FastAPI
 - **CORS** locked to explicit `ALLOWED_ORIGINS` on both backends — no wildcard in production
-- **Rate limiting** — global + per-route limits on all AI endpoints
+- **Rate limiting** — per-route, IP-based limits on cost-bearing AI endpoints
 - **Spam protection** — server-side honeypot + rate limit on contact form; unsafe request blocking before any LLM call
 - **Input validation** — Zod (Node) / Pydantic (Python) on every request body, unknown fields rejected
 - **No secrets in frontend** — only `NEXT_PUBLIC_*` vars in browser code; all AI API calls go through the backend

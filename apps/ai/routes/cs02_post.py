@@ -12,6 +12,7 @@ LangGraph graph and the mock generator are not reimplemented there.
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import operator
 import re
@@ -38,6 +39,10 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 limiter = Limiter(key_func=get_client_ip)
+
+# Bounds run_cs02_workflow's live path as a whole — see the comment at its
+# call to asyncio.timeout() for why a per-node timeout alone isn't enough.
+_LIVE_WORKFLOW_TIMEOUT_SECONDS = 120
 
 # ─── Unsafe patterns ──────────────────────────────────────────────────────────
 
@@ -915,7 +920,25 @@ async def run_cs02_workflow(
         from openai_client import make_openai_client
 
         client = make_openai_client(settings.OPENAI_API_KEY, settings.OPENAI_BASE_URL)
-        return await _run_live_workflow(client, topic, audience, tone, post_goal, use_web_context)
+        # Each node call has its own per-request timeout (OPENAI_TIMEOUT_SECONDS,
+        # default 30s, plus up to OPENAI_MAX_RETRIES retries), but nothing
+        # previously bounded the sequence as a whole — researcher, writer,
+        # critic, an optional reviser, and groundedness is up to 5 sequential
+        # calls (plus an optional Tavily fetch), each individually legitimate
+        # but compounding into an unbounded total. Both callers already treat
+        # any exception here as a clean failure (run_multi_agent_post's 500,
+        # create_researched_post's ToolError), so this needs no new handling
+        # at either call site. See mcp/apps/web/lib/api.ts's
+        # MCP_CALL_TIMEOUT_MS for the client-side timeout this sits under.
+        try:
+            async with asyncio.timeout(_LIVE_WORKFLOW_TIMEOUT_SECONDS):
+                return await _run_live_workflow(
+                    client, topic, audience, tone, post_goal, use_web_context
+                )
+        except TimeoutError as exc:
+            raise TimeoutError(
+                f"CS02 live workflow exceeded {_LIVE_WORKFLOW_TIMEOUT_SECONDS}s."
+            ) from exc
     return _build_mock_result(topic, audience)
 
 

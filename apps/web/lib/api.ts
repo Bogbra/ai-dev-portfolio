@@ -325,10 +325,12 @@ const MCP_PROTOCOL_VERSION = '2026-07-28';
 // create_researched_post runs a multi-step LangGraph workflow (research ->
 // write -> critique -> optional revise -> groundedness) against a live
 // provider in live mode — several sequential LLM calls, realistically a
-// handful of seconds each. Generous enough not to false-positive on a
-// legitimate live run, bounded enough that a stuck request doesn't hang
-// the tab indefinitely.
-const MCP_CALL_TIMEOUT_MS = 45_000;
+// handful of seconds each, up to a hard 120s server-side budget
+// (routes/cs02_post.py's _LIVE_WORKFLOW_TIMEOUT_SECONDS). Set comfortably
+// above that: a client timeout shorter than the server's own budget would
+// abandon a request the server is still legitimately working on (and
+// spending provider cost on) instead of ever seeing its result.
+const MCP_CALL_TIMEOUT_MS = 130_000;
 
 export type McpJsonRpcRequest = {
   jsonrpc: '2.0';

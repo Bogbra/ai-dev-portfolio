@@ -169,7 +169,16 @@ async def lifespan(app: FastAPI):
         pass
 
 
-limiter = Limiter(key_func=get_client_ip, default_limits=["200/hour"])
+# app.state.limiter and the exception handler below are what slowapi's
+# @limiter.limit(...) decorators actually need at the app level — each
+# route module builds its own Limiter(key_func=get_client_ip) instance and
+# decorates its own routes with real, active per-route limits. A
+# default_limits= here would look like a shared 200/hour ceiling across
+# every AI endpoint, but slowapi only auto-applies a Limiter's
+# default_limits through SlowAPIMiddleware, which isn't registered — so it
+# was never actually enforced. Deliberately left unset rather than kept as
+# unwired configuration; see README's "Per-route IP-based limits" wording.
+limiter = Limiter(key_func=get_client_ip)
 
 app = FastAPI(title="AI Portfolio Service", lifespan=lifespan)
 app.state.limiter = limiter

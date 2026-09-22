@@ -1,7 +1,7 @@
 import re
 from typing import Literal, Optional
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from settings import settings
 
@@ -75,6 +75,19 @@ class WorkflowRunRequest(BaseModel):
         if len(v) > settings.MAX_REQUEST_LENGTH:
             raise ValueError(f"Request must be {settings.MAX_REQUEST_LENGTH} characters or fewer")
         return v
+
+    @model_validator(mode="after")
+    def validate_unique_contact_ids(self) -> "WorkflowRunRequest":
+        # /ai-workflow/parse always assigns sequential, unique ids — this
+        # only matters for a request built directly against the API rather
+        # than through the upload flow. Duplicate ids make contact
+        # selection by id ambiguous (routes/cs01_workflow.py resolves a
+        # confirmed/matched contact by `c.id == ...`, which would silently
+        # pick whichever duplicate happens to match first).
+        ids = [c.id for c in self.contacts]
+        if len(ids) != len(set(ids)):
+            raise ValueError("contacts must have unique ids")
+        return self
 
 
 # ─── Email draft ──────────────────────────────────────────────────────────────
