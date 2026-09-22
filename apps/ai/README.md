@@ -60,8 +60,9 @@ docker run -p 4000:4000 \
   ai-portfolio-ai
 ```
 
-All AI workflows fall back to mock mode when `OPENAI_API_KEY` is not set.
-The Voice Agent Lab shows a disabled state when no usable key is present.
+All provider-backed workflows except the Voice Agent Lab fall back to
+deterministic mock mode when `OPENAI_API_KEY` is not set. Voice has no mock
+mode — it shows a disabled state when no usable key is present.
 The container does not write user data to disk — no volumes are required.
 
 ---

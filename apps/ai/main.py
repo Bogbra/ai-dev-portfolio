@@ -27,7 +27,33 @@ from routes.seo import router as seo_router
 from routes.voice import router as voice_router
 from settings import settings
 
-_MAX_REQUEST_BODY_BYTES = 40 * 1024 * 1024  # 40 MB — well above CS03's 25 MB total-upload limit
+# Per-path caps instead of one global ceiling: the body is fully buffered
+# (see below) before any route handler — let alone its slowapi rate limit —
+# ever sees the request, so a single generous limit shared by every route
+# lets an attacker send many large-but-under-the-cap bodies at cheap routes
+# that never legitimately need more than a few KB. Each cap is the route's
+# real worst case (an already-validated upload, base64-encoded at ~1.33x,
+# plus JSON wrapper overhead) with headroom, not a round number.
+_RAG_UPLOAD_MAX_BYTES = 40 * 1024 * 1024  # MAX_TOTAL_UPLOAD_MB (25 MB) base64'd, ~34 MB, +headroom
+_VOICE_MAX_BYTES = 8 * 1024 * 1024  # MAX_AUDIO_BYTES (5 MB) base64'd, ~6.7 MB, +headroom
+_CS01_UPLOAD_MAX_BYTES = (
+    2 * 1024 * 1024
+)  # MAX_UPLOAD_SIZE_BYTES (1 MB) base64'd, ~1.4 MB, +headroom
+# Every other route: JSON-only, no file/audio payload. CS01's /run is the
+# largest of these — up to 100 contacts x ~2 KB of string fields each
+# (schemas/cs01.py's per-field caps) is ~220 KB; this covers that with
+# roughly 2x headroom. SEO/CS02/RAG-ask/MCP bodies are all far smaller.
+_DEFAULT_MAX_BYTES = 512 * 1024
+
+_MAX_REQUEST_BODY_BYTES_BY_PATH: dict[str, int] = {
+    "/rag/upload": _RAG_UPLOAD_MAX_BYTES,
+    "/voice/agent": _VOICE_MAX_BYTES,
+    "/ai-workflow/parse": _CS01_UPLOAD_MAX_BYTES,
+}
+
+
+def _max_body_bytes_for_path(path: str) -> int:
+    return _MAX_REQUEST_BODY_BYTES_BY_PATH.get(path, _DEFAULT_MAX_BYTES)
 
 
 class BodySizeLimitMiddleware:
@@ -40,14 +66,24 @@ class BodySizeLimitMiddleware:
     # moment the running total crosses the limit, before the buffered body
     # is handed to a route handler. BaseHTTPMiddleware can't do this cheaply
     # — it fully buffers the body itself before dispatch() ever sees it.
-    def __init__(self, app: ASGIApp, max_bytes: int = _MAX_REQUEST_BODY_BYTES) -> None:
+    #
+    # max_bytes fixes the cap for every request when given (tests use this
+    # to avoid allocating tens of MB); left as None, each request looks up
+    # its own cap by path via _max_body_bytes_for_path.
+    def __init__(self, app: ASGIApp, max_bytes: int | None = None) -> None:
         self.app = app
-        self.max_bytes = max_bytes
+        self._fixed_max_bytes = max_bytes
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         if scope["type"] != "http":
             await self.app(scope, receive, send)
             return
+
+        max_bytes = (
+            self._fixed_max_bytes
+            if self._fixed_max_bytes is not None
+            else _max_body_bytes_for_path(scope.get("path", ""))
+        )
 
         chunks: list[bytes] = []
         total = 0
@@ -57,7 +93,7 @@ class BodySizeLimitMiddleware:
                 break
             body = message.get("body", b"")
             total += len(body)
-            if total > self.max_bytes:
+            if total > max_bytes:
                 response = JSONResponse(
                     {"status": "error", "message": "Request body too large."},
                     status_code=413,

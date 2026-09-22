@@ -101,7 +101,12 @@ _TOOL_RESPONSES: dict[str, str] = {
 # "unsafe_request"); do not treat this regex as a security boundary.
 
 _UNSAFE_RE = re.compile(
-    r"\b(spam|phish|scam|hack|inject|jailbreak|ignore (your|the|all) (rules?|instructions?|prompt)|"
+    # Bare "hack"/"inject" would flag a legitimate portfolio question like
+    # "How do you inject dependencies in FastAPI?" — matched only as part of
+    # a more specific phrase instead.
+    r"\b(spam|phish|scam|hack\b[\w\s]{0,15}\b(system|account|server)|"
+    r"prompt injection|inject instructions|jailbreak|"
+    r"ignore (your|the|all) (rules?|instructions?|prompt)|"
     r"pretend (you are|to be)|act as|DAN|do anything now|bypass|override system)\b",
     re.I,
 )

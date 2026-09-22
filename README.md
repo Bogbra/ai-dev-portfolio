@@ -84,7 +84,7 @@ These are demo-scale constraints, not architectural limits. A commercial deploym
 ## Production safeguards
 
 - **CSP** — per-request nonce via Next.js Middleware (`script-src 'nonce-...' 'strict-dynamic'`)
-- **Helmet** on Fastify; security headers on FastAPI
+- **Helmet** on Fastify; explicit CORS, no-store responses, body-size limits and rate limiting on FastAPI
 - **CORS** locked to explicit `ALLOWED_ORIGINS` on both backends — no wildcard in production
 - **Rate limiting** — global + per-route limits on all AI endpoints
 - **Spam protection** — server-side honeypot + rate limit on contact form; unsafe request blocking before any LLM call

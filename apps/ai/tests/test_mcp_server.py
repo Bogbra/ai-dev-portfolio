@@ -461,7 +461,10 @@ def test_rate_limit_middleware_blocks_after_max_requests():
 
     inner = Starlette(routes=[Route("/", ok)])
     inner.add_middleware(_McpRateLimitMiddleware, max_requests=3, window_seconds=60)
-    tc = StarletteTestClient(inner)
+    # client=("100.64.0.1", ...) stands in for Railway's edge proxy socket —
+    # client_ip.get_client_ip only honors X-Forwarded-For from a peer inside
+    # 100.0.0.0/8 (see client_ip.py's trust boundary).
+    tc = StarletteTestClient(inner, client=("100.64.0.1", 50000))
 
     for _ in range(3):
         assert tc.get("/", headers={"X-Forwarded-For": "9.9.9.9"}).status_code == 200
@@ -501,7 +504,13 @@ def test_rate_limit_middleware_sweeps_idle_ips_over_time():
     )
 
     async def _request(ip: str) -> None:
-        scope = {"type": "http", "headers": [(b"x-forwarded-for", ip.encode())]}
+        # client=("100.64.0.1", ...) stands in for Railway's edge proxy
+        # socket — X-Forwarded-For is only honored from a trusted peer.
+        scope = {
+            "type": "http",
+            "headers": [(b"x-forwarded-for", ip.encode())],
+            "client": ("100.64.0.1", 12345),
+        }
 
         async def receive():
             return {"type": "http.request", "body": b"", "more_body": False}
