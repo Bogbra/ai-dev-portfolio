@@ -1,5 +1,5 @@
-export { contactSchema, PROJECT_TYPES } from './contact.js';
-export type { ContactPayload, ProjectType } from './contact.js';
+export { contactSchema, contactResponseSchema, PROJECT_TYPES } from './contact.js';
+export type { ContactPayload, ContactResponse, ProjectType } from './contact.js';
 
 export {
   parsedContactSchema,

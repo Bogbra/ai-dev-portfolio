@@ -109,6 +109,28 @@ def test_critic_falls_back_safely_when_tool_output_violates_the_response_model()
     assert result["critic_feedback"]["needsRevision"] is True
 
 
+def test_critic_falls_back_safely_when_score_is_outside_the_documented_1_to_10_range():
+    # strict:true on the tool schema should make this unreachable too, but
+    # CriticOutput.score now has ge=1/le=10 — this proves an out-of-range
+    # score is treated as a schema violation (same fail-closed path as a
+    # missing required field), not silently clamped downstream into a
+    # plausible-looking value.
+    client = _client_returning(
+        "critique_post",
+        {
+            "score": 250,
+            "strengths": ["clear"],
+            "issues": [],
+            "revision_instructions": "",
+            "needs_revision": False,
+        },
+    )
+    state = {"openai_client": client, "model": "gpt-4o-mini", "initial_draft": "draft"}
+    result = asyncio.run(_critic_node(state))
+    assert result["critic_feedback"]["score"] == 7
+    assert result["critic_feedback"]["needsRevision"] is True
+
+
 # ─── Groundedness fail-closed ───────────────────────────────────────────────
 
 

@@ -157,7 +157,7 @@ Each app has a `.env.example`. The root `.env.example` documents everything in o
 | Variable | Description |
 |---|---|
 | `ALLOWED_ORIGINS` | Comma-separated CORS origins |
-| `RESEND_API_KEY` | Resend API key (optional — logs to console if absent) |
+| `RESEND_API_KEY` | Resend API key — optional; when absent or `ENABLE_EMAIL_SENDING` is `false`, submissions are not delivered and the API reports `delivered: false` (no message content is logged) |
 | `MAIL_FROM` | Sender email address |
 | `MAIL_TO` | Recipient email address |
 | `ENABLE_EMAIL_SENDING` | `true` to send real emails |

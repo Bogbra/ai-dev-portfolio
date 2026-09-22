@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
+import { z } from 'zod';
 import { easings } from '@/components/motion/easings';
 import { env } from '@/lib/env';
 
@@ -16,42 +17,34 @@ type Stage = {
   status: StageStatus;
 };
 
-type Intent =
-  | 'general_question'
-  | 'project_question'
-  | 'contact_request'
-  | 'tool_request'
-  | 'unsafe_request'
-  | 'unclear_request'
-  | 'human_handoff';
+// Validated at runtime (agentResultSchema below), not just cast — a
+// malformed 200 response would otherwise crash the component the moment it
+// dereferences e.g. latency_breakdown.stt_ms. Backend (schemas/voice.py)
+// keeps intent/safety_state as plain str rather than an enum, so this
+// mirrors that leniency instead of rejecting a value outside the label
+// maps below — both lookups already fall back to the raw string via `??`.
+const latencyBreakdownSchema = z.object({
+  stt_ms: z.number(),
+  intent_ms: z.number(),
+  tool_ms: z.number(),
+  llm_ms: z.number(),
+  tts_ms: z.number(),
+  total_ms: z.number(),
+});
 
-type SafetyState =
-  | 'safe'
-  | 'unclear'
-  | 'needs_confirmation'
-  | 'unsafe_request'
-  | 'handoff_recommended';
+const agentResultSchema = z.object({
+  transcript: z.string(),
+  intent: z.string(),
+  safety_state: z.string(),
+  tool_used: z.string(),
+  response_text: z.string(),
+  confidence: z.number(),
+  handoff_required: z.boolean(),
+  latency_breakdown: latencyBreakdownSchema,
+  audio_b64: z.string(),
+});
 
-type LatencyBreakdown = {
-  stt_ms: number;
-  intent_ms: number;
-  tool_ms: number;
-  llm_ms: number;
-  tts_ms: number;
-  total_ms: number;
-};
-
-type AgentResult = {
-  transcript: string;
-  intent: Intent;
-  safety_state: SafetyState;
-  tool_used: string;
-  response_text: string;
-  confidence: number;
-  handoff_required: boolean;
-  latency_breakdown: LatencyBreakdown;
-  audio_b64: string;
-};
+type AgentResult = z.infer<typeof agentResultSchema>;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -90,7 +83,11 @@ function base64ToAudioUrl(b64: string): string {
   return `data:audio/mpeg;base64,${b64}`;
 }
 
-const INTENT_LABELS: Record<Intent, string> = {
+// Partial<Record<string, ...>>, not Record<Intent, ...>: intent/safety_state
+// are validated as plain strings (agentResultSchema mirrors the backend's
+// own leniency there), so a value outside this label set is a real,
+// expected case — both lookups below already fall back to the raw string.
+const INTENT_LABELS: Partial<Record<string, string>> = {
   general_question:  'General question',
   project_question:  'Project question',
   contact_request:   'Contact request',
@@ -100,7 +97,7 @@ const INTENT_LABELS: Record<Intent, string> = {
   human_handoff:     'Human handoff',
 };
 
-const SAFETY_LABELS: Record<SafetyState, string> = {
+const SAFETY_LABELS: Partial<Record<string, string>> = {
   safe:                'Safe',
   unclear:             'Unclear',
   needs_confirmation:  'Needs confirmation',
@@ -348,7 +345,7 @@ export function VoiceAgentLab() {
         return;
       }
 
-      const json = await res.json() as AgentResult & { message?: string };
+      const json = (await res.json()) as { message?: string };
 
       if (!res.ok) {
         setError(json.message ?? 'Something went wrong. Please try again.');
@@ -356,7 +353,14 @@ export function VoiceAgentLab() {
         return;
       }
 
-      data = json;
+      const parsed = agentResultSchema.safeParse(json);
+      if (!parsed.success) {
+        setError('Received an unexpected response from the server. Please try again.');
+        setIsProcessing(false);
+        return;
+      }
+
+      data = parsed.data;
     } catch {
       setError('Unable to connect. Please check your connection and try again.');
       setIsProcessing(false);
@@ -635,22 +639,32 @@ export function VoiceAgentLab() {
 
                       {/* Audio playback */}
                       {result.audio_b64 && (
-                        <button
-                          onClick={togglePlayback}
-                          aria-label={isPlaying ? 'Pause response audio' : 'Play response audio'}
-                          className={[
-                            'flex items-center gap-2 font-mono text-sm px-3 py-2 rounded-md border transition-colors duration-150',
-                            'focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2',
-                            isPlaying
-                              ? 'border-fg text-fg bg-fg/5'
-                              : 'border-border text-muted hover:border-fg hover:text-fg',
-                          ].join(' ')}
-                        >
-                          <span aria-hidden="true">
-                            {isPlaying ? '⏸' : '▶'}
+                        <div className="flex items-center gap-3 flex-wrap">
+                          <button
+                            onClick={togglePlayback}
+                            aria-label={isPlaying ? 'Pause response audio' : 'Play response audio'}
+                            className={[
+                              'flex items-center gap-2 font-mono text-sm px-3 py-2 rounded-md border transition-colors duration-150',
+                              'focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2',
+                              isPlaying
+                                ? 'border-fg text-fg bg-fg/5'
+                                : 'border-border text-muted hover:border-fg hover:text-fg',
+                            ].join(' ')}
+                          >
+                            <span aria-hidden="true">
+                              {isPlaying ? '⏸' : '▶'}
+                            </span>
+                            {isPlaying ? 'Pause response' : 'Play response'}
+                          </button>
+                          {/* OpenAI's TTS usage policy requires clearly disclosing
+                              to end users that the voice they hear is AI-generated,
+                              not a human — the privacy page explains TTS is used,
+                              but that's not the same as disclosure at the point of
+                              listening. */}
+                          <span className="font-mono text-xs text-subtle">
+                            AI-generated voice · OpenAI TTS
                           </span>
-                          {isPlaying ? 'Pause response' : 'Play response'}
-                        </button>
+                        </div>
                       )}
                     </div>
 

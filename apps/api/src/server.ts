@@ -8,6 +8,14 @@ import errorHandlerPlugin from './plugins/error-handler.js';
 import healthRoutes from './routes/health.js';
 import contactRoutes from './routes/contact.js';
 
+// trustProxy is a Fastify constructor option, so it's needed before
+// envPlugin has registered and decorated app.config — read directly from
+// process.env here, with the same default env.ts validates and falls back
+// to. Comma-separated so it matches apps/ai's TRUSTED_PROXY_CIDRS exactly.
+const TRUSTED_PROXY_CIDRS = (process.env['TRUSTED_PROXY_CIDRS'] ?? '100.0.0.0/8')
+  .split(',')
+  .map((c) => c.trim());
+
 export async function buildApp() {
   const app = Fastify<Server>({
     logger: {
@@ -18,14 +26,22 @@ export async function buildApp() {
     // Fastify >=5.12.1 (CVE-2026-16732) disabled the numeric trustProxy form
     // entirely — a hop count can't verify who the immediate peer actually is,
     // so it let an attacker with direct access spoof X-Forwarded-* and forge
-    // the trusted hop. We trust by the edge's own IP range instead: Railway's
-    // proxy always connects from 100.0.0.0/8, so only a request whose peer
-    // falls in that range gets its X-Forwarded-For entry honored — a direct
-    // client can't fake that range on the connecting socket itself. Using
-    // `true` instead would trust the whole chain and take the leftmost,
-    // client-controlled entry, letting one visitor rotate fake addresses to
-    // dodge (or, worse, collapse everyone else into) the rate-limit bucket.
-    trustProxy: '100.0.0.0/8',
+    // the trusted hop. We trust by the edge's own IP range instead: only a
+    // request whose peer falls in TRUSTED_PROXY_CIDRS gets its
+    // X-Forwarded-For entry honored — a direct client can't fake that range
+    // on the connecting socket itself. Using `true` instead would trust the
+    // whole chain and take the leftmost, client-controlled entry, letting
+    // one visitor rotate fake addresses to dodge (or, worse, collapse
+    // everyone else into) the rate-limit bucket.
+    //
+    // The default (100.0.0.0/8) is this service's own observation of where
+    // Railway's edge has connected from, not a documented, permanent
+    // guarantee from Railway — configurable via TRUSTED_PROXY_CIDRS
+    // (comma-separated) precisely because it could change or need
+    // widening without a code change. See apps/ai/client_ip.py's module
+    // docstring for the matching reasoning and re-verification steps on
+    // the Python side.
+    trustProxy: TRUSTED_PROXY_CIDRS,
   });
 
   // Order matters: env first so all plugins can read app.config

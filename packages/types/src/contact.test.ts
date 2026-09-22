@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { contactSchema } from './contact.js';
+import { contactSchema, contactResponseSchema } from './contact.js';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -195,6 +195,29 @@ describe('honeypot field', () => {
 describe('unknown fields', () => {
   it('rejects a payload with an extra top-level field', () => {
     const result = contactSchema.safeParse({ ...valid, extra: 'not allowed' });
+    expect(result.success).toBe(false);
+  });
+});
+
+// ─── Response ─────────────────────────────────────────────────────────────────
+
+describe('contactResponseSchema', () => {
+  it('accepts a well-formed success response', () => {
+    const result = contactResponseSchema.safeParse({ message: 'Sent.', delivered: true });
+    expect(result.success).toBe(true);
+  });
+
+  it('accepts an empty object — fields are optional, fail-closed handling lives in the caller', () => {
+    expect(contactResponseSchema.safeParse({}).success).toBe(true);
+  });
+
+  it('rejects a non-object body', () => {
+    expect(contactResponseSchema.safeParse('not an object').success).toBe(false);
+    expect(contactResponseSchema.safeParse(null).success).toBe(false);
+  });
+
+  it('rejects a delivered field with the wrong type', () => {
+    const result = contactResponseSchema.safeParse({ delivered: 'true' });
     expect(result.success).toBe(false);
   });
 });

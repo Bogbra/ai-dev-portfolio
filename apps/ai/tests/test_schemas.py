@@ -184,6 +184,19 @@ def test_rag_ask_request_rejects_client_chosen_readable_session_id():
         RagAskRequest(question="What is the main finding?", sessionId="session-abc123")
 
 
+def test_rag_ask_request_rejects_a_valid_uuid_that_is_not_version_4():
+    # Regression: uuid.UUID(v, version=4) does not check that v is a v4
+    # UUID — it force-sets the version bits on the *returned* object,
+    # accepting a syntactically valid uuid1 (or any other version) as if it
+    # were v4. A real, well-formed uuid1 string is exactly the case that
+    # slipped through before the fix.
+    import uuid
+
+    non_v4 = str(uuid.uuid1())
+    with pytest.raises(ValidationError):
+        RagAskRequest(question="What is the main finding?", sessionId=non_v4)
+
+
 # ─── RagUploadRequest ─────────────────────────────────────────────────────────
 # No sessionId field: the server generates one in rag_upload and returns it —
 # the client has no say in what ID its documents are indexed under.
@@ -203,9 +216,16 @@ def test_rag_upload_request_empty_files():
         RagUploadRequest(files=[])
 
 
-def test_rag_upload_request_too_many_files():
-    with pytest.raises(ValidationError):
-        RagUploadRequest(files=[_rag_file(f"doc{i}.pdf") for i in range(4)])
+def test_rag_upload_request_schema_does_not_hardcode_the_file_count_cap():
+    # The schema only requires "at least one file" — the upper bound is
+    # enforced once, in rag_upload (routes/cs03_rag.py) against
+    # settings.MAX_PDFS, not duplicated here as a hardcoded number that
+    # would silently win over whatever MAX_PDFS is actually configured to
+    # (schema validation runs before the route body ever sees the request).
+    # See test_rag_upload_rejects_more_than_max_pdfs in test_routes.py for
+    # the actual enforcement.
+    req = RagUploadRequest(files=[_rag_file(f"doc{i}.pdf") for i in range(10)])
+    assert len(req.files) == 10
 
 
 # ─── Unknown fields ───────────────────────────────────────────────────────────

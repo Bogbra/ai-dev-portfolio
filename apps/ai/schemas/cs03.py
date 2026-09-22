@@ -21,8 +21,12 @@ class RagUploadRequest(BaseModel):
     def validate_files(cls, v: list) -> list:
         if not v:
             raise ValueError("At least one file required")
-        if len(v) > 3:
-            raise ValueError("Maximum 3 PDFs allowed")
+        # The upper bound is intentionally NOT enforced here as a hardcoded
+        # number — rag_upload (routes/cs03_rag.py) already checks
+        # len(req.files) > settings.MAX_PDFS. A second, hardcoded cap here
+        # would silently win over that check regardless of what MAX_PDFS is
+        # actually configured to (validation runs before the route body),
+        # making the setting look configurable while not actually being so.
         return v
 
 
@@ -48,8 +52,17 @@ class RagAskRequest(BaseModel):
         # Session IDs are always server-generated uuid4 strings (see
         # rag_upload in routes/cs03_rag.py) — reject anything else up front
         # instead of relying solely on a dict-miss to catch malformed input.
+        #
+        # uuid.UUID(v, version=N) does NOT validate that v is version N — it
+        # parses v as any UUID and then force-sets the version bits on the
+        # returned object to N, regardless of what version v actually was.
+        # A valid uuid1 string passes this uncaught. Parsing without a
+        # forced version and checking .version explicitly is the only way
+        # to actually reject a non-v4 UUID.
         try:
-            uuid.UUID(v, version=4)
+            parsed = uuid.UUID(v)
         except ValueError as exc:
             raise ValueError("Invalid session ID") from exc
+        if parsed.version != 4:
+            raise ValueError("Invalid session ID")
         return v

@@ -1009,7 +1009,7 @@ The result is output you can actually stand behind.
             {
                 "name": "Groundedness Check",
                 "status": "done",
-                "summary": "All claims grounded. No unsupported assertions.",
+                "summary": "Grounding not evaluated in demo mode.",
             },
         ],
         "researchContext": {
@@ -1020,7 +1020,12 @@ The result is output you can actually stand behind.
             ],
             "sources": [],
             "researchStatus": "not_attempted",
-            "skippedReason": "No TAVILY_API_KEY configured — demo mode",
+            # Not necessarily true — this mock path also runs when
+            # OPENAI_API_KEY is unset regardless of Tavily, when the MCP
+            # live-demo quota is exhausted, or when live mode is disabled
+            # administratively. A message this mock always shows must be
+            # true in every one of those cases, not name one specific cause.
+            "skippedReason": "Demo mode — external research was not performed.",
         },
         "sources": [],
         "initialDraft": initial_draft,
@@ -1036,14 +1041,14 @@ The result is output you can actually stand behind.
         },
         "revisionNotes": "Adjusted opening to be less confrontational. Closing question now references a specific scenario.",
         "groundednessResult": {
-            "status": "grounded",
-            "supportedClaims": [
-                "All claims are general and well-established",
-                "No specific statistics or unverifiable metrics used",
-            ],
-            "unsupportedClaims": [],
             # Mock mode makes no LLM or search call at all — there is no
-            # research context or source material to check against.
+            # research context, source material, or groundedness model run
+            # to check claims against, so this can't honestly report
+            # "grounded" (that would claim a check happened and passed).
+            "status": "needs_caution",
+            "supportedClaims": [],
+            "unsupportedClaims": [],
+            "cautionNotes": "Demo mode — no external grounding check was performed.",
             "groundingBasis": "none",
         },
         "finalPost": {

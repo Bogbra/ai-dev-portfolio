@@ -9,6 +9,16 @@ const envSchema = z.object({
     .string()
     .min(1)
     .transform((s) => s.split(',').map((o) => o.trim())),
+  // Also read directly from process.env in server.ts before the Fastify
+  // instance is constructed (trustProxy is a constructor-time option, so it
+  // can't wait for this plugin's app.config to exist) — validated/decorated
+  // here too so it's documented alongside every other env var and a bad
+  // value still fails startup the same way.
+  TRUSTED_PROXY_CIDRS: z
+    .string()
+    .min(1)
+    .default('100.0.0.0/8')
+    .transform((s) => s.split(',').map((c) => c.trim())),
   RESEND_API_KEY: z
     .string()
     .optional()

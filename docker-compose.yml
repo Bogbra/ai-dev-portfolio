@@ -93,7 +93,9 @@ services:
       PORT: "4000"
       ALLOWED_ORIGINS: "http://localhost:3000"
       # OPENAI_API_KEY / TAVILY_API_KEY / VOICE_OPENAI_API_KEY — set in .env.
-      # Without them, all AI workflows run in mock mode automatically.
+      # Without OPENAI_API_KEY, CS01-CS03 and SEO fall back to deterministic
+      # mock mode automatically; the Voice Agent Lab has no mock mode and is
+      # disabled without usable speech credentials.
     env_file:
       - path: .env
         required: false

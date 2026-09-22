@@ -166,10 +166,10 @@ export default function DatenschutzPage() {
               können ausschließlich in die Zwischenablage kopiert werden.
             </p>
             <p>
-              <strong className="text-fg font-medium">Logs:</strong> Es werden ausschließlich
-              anonymisierte Statusereignisse protokolliert (z. B. workflow_started, draft_generated).
-              Personenbezogene Daten (Kontaktinformationen, Anfragetexte, Entwurfsinhalte)
-              erscheinen nicht in Logs.
+              <strong className="text-fg font-medium">Logs:</strong> Die Anwendung protokolliert
+              keine hochgeladenen Kontaktdatensätze, Anfragetexte oder generierten
+              Entwurfsinhalte als Anwendungslogs. Technische Hosting- und Serverlogs können
+              insbesondere Zeitpunkt, Route und Netzwerkmetadaten enthalten.
             </p>
             <p>
               <strong className="text-fg font-medium">Rechtsgrundlage:</strong> Art. 6 Abs. 1 lit. a
@@ -331,11 +331,14 @@ export default function DatenschutzPage() {
               Vercel Web Analytics, einen datenschutzfreundlichen Analysedienst von{' '}
               <strong className="text-fg font-medium">Vercel Inc.</strong>, 440 N Barranca Ave #4133,
               Covina, CA 91723, USA. Vercel Analytics erfasst aggregierte Seitenaufrufzahlen,
-              Besucherzahlen, Herkunftsland und verwendetes Gerät — ohne Cookies, ohne
-              Nutzer-IDs und ohne geräteübergreifendes Tracking. Es werden keine personenbezogenen
-              Daten dauerhaft gespeichert. Die Messung erfolgt auf Basis anonymisierter technischer
-              Daten. Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse an der
-              anonymen Nutzungsanalyse zur Verbesserung des Angebots). Weitere Informationen:{' '}
+              Besucherzahlen, Herkunftsland und verwendetes Gerät — ohne Tracking-Cookies und
+              ohne dauerhafte websiteübergreifende Nutzerkennung. Für aggregierte
+              Besucherstatistiken verwendet Vercel einen kurzlebigen, aus Requestdaten
+              erzeugten Identifier/Hash, der nach 24 Stunden verworfen wird. Im Rahmen des
+              Dienstes können dabei auch IP-Adressen und daraus abgeleitete
+              Standortinformationen (Land) verarbeitet werden. Rechtsgrundlage ist Art. 6
+              Abs. 1 lit. f DSGVO (berechtigtes Interesse an der anonymen Nutzungsanalyse zur
+              Verbesserung des Angebots). Weitere Informationen:{' '}
               <span className="font-mono text-base">vercel.com/legal/privacy-policy</span>
             </p>
             <p>

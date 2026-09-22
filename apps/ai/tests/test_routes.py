@@ -244,6 +244,32 @@ def test_rag_upload_rejects_non_pdf_magic_bytes(client: TestClient):
     assert "pdf" in r.json()["message"].lower()
 
 
+def test_rag_upload_rejects_more_than_max_pdfs(client: TestClient):
+    from settings import settings
+
+    files = [
+        {
+            "filename": f"report{i}.pdf",
+            "content": _b64("not actually a pdf"),
+            "mimeType": "application/pdf",
+        }
+        for i in range(settings.MAX_PDFS + 1)
+    ]
+    # A distinct X-Forwarded-For puts this request in its own rate-limit
+    # bucket — every other /rag/upload test in this session-scoped client
+    # shares the "no header" bucket (falls back to the fixed trusted-peer
+    # address), and /rag/upload's own limit (10/hour) is tight enough that
+    # this call would otherwise sometimes 429 depending on how many of
+    # those already ran first.
+    r = client.post(
+        "/rag/upload",
+        json={"files": files},
+        headers={"X-Forwarded-For": "203.0.113.77"},
+    )
+    assert r.status_code == 400
+    assert str(settings.MAX_PDFS) in r.json()["message"]
+
+
 def test_rag_upload_rejects_invalid_base64(client: TestClient):
     r = client.post(
         "/rag/upload",

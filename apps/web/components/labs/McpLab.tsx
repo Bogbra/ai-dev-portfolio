@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { z } from 'zod';
 import { callMcpTool } from '@/lib/api';
 import { useLang } from '@/lib/i18n';
 import { isSafeExternalUrl } from '@/lib/url';
@@ -8,34 +9,48 @@ import { isSafeExternalUrl } from '@/lib/url';
 // ─── Types ────────────────────────────────────────────────────────────────────
 // Mirrors apps/ai/schemas/mcp.py — this lab talks to the MCP server directly,
 // not through a packages/types-shared contract (see lib/api.ts's callMcpTool).
+// Runtime-validated with these schemas, not just cast — the MCP server's
+// structuredContent arrives as an untyped `unknown` over the wire; a
+// TypeScript generic alone carries no runtime guarantee, unlike this lab's
+// REST-calling siblings, which all validate via lib/api.ts's parseResponse.
 
-type ExecutionInfo = {
-  mode: 'live' | 'mock';
-  remainingLiveCalls: number;
-  liveCallLimit: number;
-  fallbackReason: 'live_quota_exhausted' | 'live_mode_disabled' | null;
-  durationMs: number;
-};
+const executionInfoSchema = z.object({
+  mode: z.enum(['live', 'mock']),
+  remainingLiveCalls: z.number(),
+  liveCallLimit: z.number(),
+  fallbackReason: z.enum(['live_quota_exhausted', 'live_mode_disabled']).nullable(),
+  durationMs: z.number(),
+});
 
-type PostSource = { title: string; url: string | null; snippet: string };
+const postSourceSchema = z.object({
+  title: z.string().default(''),
+  url: z.string().nullable().default(null),
+  snippet: z.string().default(''),
+});
 
-type CreateResearchedPostResponse = {
-  execution: ExecutionInfo;
-  result: {
-    post: string;
-    sources: PostSource[];
-    groundedness: string;
-    criticScore: number;
-    revised: boolean;
-  };
-};
+const createResearchedPostResponseSchema = z.object({
+  execution: executionInfoSchema,
+  result: z.object({
+    post: z.string(),
+    sources: z.array(postSourceSchema),
+    groundedness: z.string(),
+    groundingBasis: z.enum(['sources', 'context', 'none']),
+    criticScore: z.number(),
+    revised: z.boolean(),
+  }),
+});
 
-type DemoStatusResponse = {
-  liveEnabled: boolean;
-  liveCallLimit: number;
-  remainingLiveCalls: number;
-  fallbackMode: 'mock';
-};
+type ExecutionInfo = z.infer<typeof executionInfoSchema>;
+type CreateResearchedPostResponse = z.infer<typeof createResearchedPostResponseSchema>;
+
+const demoStatusResponseSchema = z.object({
+  liveEnabled: z.boolean(),
+  liveCallLimit: z.number(),
+  remainingLiveCalls: z.number(),
+  fallbackMode: z.literal('mock'),
+});
+
+type DemoStatusResponse = z.infer<typeof demoStatusResponseSchema>;
 
 type RunState = 'idle' | 'running' | 'done' | 'error';
 
@@ -84,7 +99,7 @@ export function McpLab() {
   async function handleCheckStatus() {
     setQuotaLoading(true);
     setQuotaError('');
-    const call = await callMcpTool<DemoStatusResponse>('get_demo_status', {});
+    const call = await callMcpTool('get_demo_status', {}, demoStatusResponseSchema);
     setLastCall({ tool: 'get_demo_status', request: call.request, response: call.response });
     if (call.ok && call.data) {
       setQuota(call.data);
@@ -114,9 +129,11 @@ export function McpLab() {
     setRunState('running');
     setResult(null);
 
-    const call = await callMcpTool<CreateResearchedPostResponse>('create_researched_post', {
-      topic: trimmed,
-    });
+    const call = await callMcpTool(
+      'create_researched_post',
+      { topic: trimmed },
+      createResearchedPostResponseSchema,
+    );
     setLastCall({ tool: 'create_researched_post', request: call.request, response: call.response });
 
     if (call.ok && call.data) {

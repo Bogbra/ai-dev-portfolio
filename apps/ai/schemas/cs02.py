@@ -91,7 +91,13 @@ class WriterOutput(BaseModel):
 class CriticOutput(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    score: float
+    # Documented contract is 1-10 (see the tool schema's "score" description
+    # in routes/cs02_post.py) — enforced here, not just clamped after the
+    # fact downstream (max(0, min(10, round(...)))). An out-of-range score
+    # is malformed structured output and should fail validation, the same
+    # way this project treats every other tool-call contract, rather than
+    # being silently repaired into a plausible-looking value.
+    score: float = Field(ge=1, le=10)
     strengths: list[str] = Field(default_factory=list)
     issues: list[str] = Field(default_factory=list)
     revision_instructions: str

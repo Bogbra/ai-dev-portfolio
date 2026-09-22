@@ -43,3 +43,12 @@ export const contactSchema = z.object({
 }).strict();
 
 export type ContactPayload = z.infer<typeof contactSchema>;
+
+// ─── Response ─────────────────────────────────────────────────────────────────
+
+export const contactResponseSchema = z.object({
+  message: z.string().optional(),
+  delivered: z.boolean().optional(),
+}).passthrough();
+
+export type ContactResponse = z.infer<typeof contactResponseSchema>;

@@ -1,10 +1,12 @@
 import { env } from '@/lib/env';
 import {
+  contactResponseSchema,
   uploadResponseSchema,
   workflowResultSchema,
   multiAgentPostResultSchema,
   ragUploadResultSchema,
   ragAskResultSchema,
+  retrievedChunkSchema,
   seoStrategyResultSchema,
 } from '@ai/types';
 import type {
@@ -18,10 +20,10 @@ import type {
   RagUploadResult,
   RagAskRequest,
   RagAskResult,
-  RetrievedChunk,
   SeoStrategyRequest,
   SeoStrategyResult,
 } from '@ai/types';
+import { z } from 'zod';
 import type { ZodType } from 'zod';
 
 type Ok<T> = { ok: true; data: T };
@@ -43,12 +45,26 @@ function parseResponse<S extends ZodType>(schema: S, data: unknown): Result<S['_
   return { ok: true, data: parsed.data };
 }
 
-export type RagStreamEvent =
-  | { type: 'sources'; sources: RetrievedChunk[]; confidence: string; reasoning: string; mockMode: boolean }
-  | { type: 'token'; content: string }
-  | { type: 'done' }
-  | { type: 'no_context'; message: string }
-  | { type: 'error'; message: string };
+// SSE events are parsed with this, not just cast — a malformed or
+// unexpected-shape event (a backend bug, a version skew between deployed
+// frontend/backend) must not reach onEvent's consumer typed as something
+// it isn't; it's skipped instead, same as the existing "ignore malformed
+// event" behavior for a line that isn't even valid JSON.
+const ragStreamEventSchema = z.discriminatedUnion('type', [
+  z.object({
+    type: z.literal('sources'),
+    sources: z.array(retrievedChunkSchema),
+    confidence: z.string(),
+    reasoning: z.string(),
+    mockMode: z.boolean(),
+  }),
+  z.object({ type: z.literal('token'), content: z.string() }),
+  z.object({ type: z.literal('done') }),
+  z.object({ type: z.literal('no_context'), message: z.string() }),
+  z.object({ type: z.literal('error'), message: z.string() }),
+]);
+
+export type RagStreamEvent = z.infer<typeof ragStreamEventSchema>;
 
 export async function submitContact(
   payload: ContactPayload,
@@ -60,10 +76,15 @@ export async function submitContact(
       body: JSON.stringify(payload),
     });
 
-    const data = (await res.json()) as { message?: string; delivered?: boolean };
+    const data = (await res.json()) as { message?: string };
 
     if (!res.ok) {
       return { ok: false, error: data.message ?? 'Something went wrong. Please try again.' };
+    }
+
+    const parsed = contactResponseSchema.safeParse(data);
+    if (!parsed.success) {
+      return { ok: false, error: 'Received an unexpected response from the server. Please try again.' };
     }
 
     return {
@@ -72,7 +93,10 @@ export async function submitContact(
       // 200 (contact.ts) — anything else (missing field, wrong type) is an
       // unexpected response shape, not a confirmed delivery, so it must not
       // read as "sent" to the user.
-      data: { message: data.message ?? 'Message received.', delivered: data.delivered === true },
+      data: {
+        message: parsed.data.message ?? 'Message received.',
+        delivered: parsed.data.delivered === true,
+      },
     };
   } catch {
     return { ok: false, error: 'Unable to connect. Please check your connection and try again.' };
@@ -208,7 +232,9 @@ export async function ragAskStream(
         for (const line of part.split('\n')) {
           if (line.startsWith('data: ')) {
             try {
-              const event = JSON.parse(line.slice(6)) as RagStreamEvent;
+              const parsed = ragStreamEventSchema.safeParse(JSON.parse(line.slice(6)));
+              if (!parsed.success) continue; // ignore malformed/unexpected-shape event
+              const event = parsed.data;
               if (event.type === 'done' || event.type === 'no_context' || event.type === 'error') {
                 terminalEventReceived = true;
               }
@@ -358,10 +384,11 @@ export type McpToolCall<T> = {
   error?: string | undefined;
 };
 
-export async function callMcpTool<T>(
+export async function callMcpTool<S extends ZodType>(
   name: string,
   args: Record<string, unknown>,
-): Promise<McpToolCall<T>> {
+  responseSchema: S,
+): Promise<McpToolCall<S['_output']>> {
   mcpRequestId += 1;
   const request: McpJsonRpcRequest = {
     jsonrpc: '2.0',
@@ -409,7 +436,7 @@ export async function callMcpTool<T>(
       result?: {
         isError?: boolean;
         content?: { text?: string }[];
-        structuredContent?: T;
+        structuredContent?: unknown;
       };
     };
 
@@ -431,7 +458,23 @@ export async function callMcpTool<T>(
       };
     }
 
-    return { request, response, ok: true, data: response.result?.structuredContent };
+    // apps/ai's own Pydantic schemas already validate this server-side
+    // (schemas/mcp.py) — this is the same second, independent frontend-side
+    // check every other endpoint in this file goes through via
+    // parseResponse, so the MCP lab demonstrates the same runtime-contract
+    // discipline as the REST endpoints instead of trusting a TypeScript
+    // generic, which carries no runtime guarantee at all.
+    const parsed = responseSchema.safeParse(response.result?.structuredContent);
+    if (!parsed.success) {
+      return {
+        request,
+        response,
+        ok: false,
+        error: 'Received an unexpected response from the MCP server.',
+      };
+    }
+
+    return { request, response, ok: true, data: parsed.data };
   } catch (err) {
     if (err instanceof DOMException && err.name === 'AbortError') {
       return { request, response: null, ok: false, error: 'timeout' };

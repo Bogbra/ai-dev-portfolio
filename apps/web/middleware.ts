@@ -39,8 +39,13 @@ export function middleware(request: NextRequest) {
     `base-uri 'self'`,
     `form-action 'self'`,
 
-    // Automatically upgrade HTTP resources to HTTPS (relevant in production only)
-    `upgrade-insecure-requests`,
+    // Automatically upgrade HTTP resources to HTTPS — production only.
+    // Local dev's NEXT_PUBLIC_API_URL/NEXT_PUBLIC_AI_URL are plain
+    // http://localhost; this directive tells the browser to upgrade those
+    // connect-src requests to https, which a local dev server doesn't
+    // serve. Safari in particular upgrades http://localhost itself under
+    // this directive, breaking every backend call in dev.
+    ...(!isDev ? [`upgrade-insecure-requests`] : []),
   ].join('; ');
 
   const requestHeaders = new Headers(request.headers);

@@ -18,6 +18,7 @@ from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from client_ip import get_client_ip
 from mcp_server import mcp_app, mcp_server
+from routes import voice as voice_module
 from routes.cs01_workflow import router as cs01_router
 from routes.cs02_post import router as cs02_router
 from routes.cs03_rag import cleanup_sessions
@@ -27,18 +28,33 @@ from routes.seo import router as seo_router
 from routes.voice import router as voice_router
 from settings import settings
 
+
 # Per-path caps instead of one global ceiling: the body is fully buffered
 # (see below) before any route handler — let alone its slowapi rate limit —
 # ever sees the request, so a single generous limit shared by every route
 # lets an attacker send many large-but-under-the-cap bodies at cheap routes
-# that never legitimately need more than a few KB. Each cap is the route's
-# real worst case (an already-validated upload, base64-encoded at ~1.33x,
-# plus JSON wrapper overhead) with headroom, not a round number.
-_RAG_UPLOAD_MAX_BYTES = 40 * 1024 * 1024  # MAX_TOTAL_UPLOAD_MB (25 MB) base64'd, ~34 MB, +headroom
-_VOICE_MAX_BYTES = 8 * 1024 * 1024  # MAX_AUDIO_BYTES (5 MB) base64'd, ~6.7 MB, +headroom
-_CS01_UPLOAD_MAX_BYTES = (
-    2 * 1024 * 1024
-)  # MAX_UPLOAD_SIZE_BYTES (1 MB) base64'd, ~1.4 MB, +headroom
+# that never legitimately need more than a few KB.
+#
+# Derived from the same settings each route's own upload-size validation
+# already uses, rather than separately hand-picked byte counts — those two
+# would otherwise be able to silently drift apart (e.g. MAX_TOTAL_UPLOAD_MB
+# raised later without this middleware's cap following), rejecting a
+# request the route's own logic would have accepted, or the reverse.
+def _upload_body_cap(binary_bytes: int, *, file_count: int = 1) -> int:
+    """Base64 inflates payload size by 4/3; JSON structure (filename/mimeType
+    keys, quoting, one entry per file) adds a smaller amount on top — 10%
+    of the binary size per file, floored at 8 KB, is comfortably more than
+    that actually costs."""
+    base64_bytes = -(-binary_bytes * 4 // 3)  # ceil(binary_bytes * 4 / 3)
+    json_headroom = max(binary_bytes // 10, 8 * 1024) * file_count
+    return base64_bytes + json_headroom
+
+
+_RAG_UPLOAD_MAX_BYTES = _upload_body_cap(
+    settings.MAX_TOTAL_UPLOAD_MB * 1024 * 1024, file_count=settings.MAX_PDFS
+)
+_VOICE_MAX_BYTES = _upload_body_cap(voice_module.MAX_AUDIO_BYTES)
+_CS01_UPLOAD_MAX_BYTES = _upload_body_cap(settings.MAX_UPLOAD_SIZE_BYTES)
 # Every other route: JSON-only, no file/audio payload. CS01's /run is the
 # largest of these — up to 100 contacts x ~2 KB of string fields each
 # (schemas/cs01.py's per-field caps) is ~220 KB; this covers that with
@@ -54,6 +70,19 @@ _MAX_REQUEST_BODY_BYTES_BY_PATH: dict[str, int] = {
 
 def _max_body_bytes_for_path(path: str) -> int:
     return _MAX_REQUEST_BODY_BYTES_BY_PATH.get(path, _DEFAULT_MAX_BYTES)
+
+
+# /rag/upload is the one route whose body can legitimately reach
+# _RAG_UPLOAD_MAX_BYTES (40 MB) — every concurrent request buffering that
+# much (see BodySizeLimitMiddleware below) before it ever reaches
+# routes/cs03_rag.py's own PDF-parsing/embedding stage multiplies that
+# against the container's fixed memory limit. Held for the *entire* request
+# (buffering through the route handler returning), not just the buffering
+# step alone — a semaphore acquired only around buffering would still let N
+# requests' full bodies sit in memory at once while N *different* requests
+# are in the parsing/embedding stage.
+RAG_UPLOAD_CONCURRENCY_SEMAPHORE = asyncio.Semaphore(2)
+_RAG_UPLOAD_PATH = "/rag/upload"
 
 
 class BodySizeLimitMiddleware:
@@ -79,6 +108,14 @@ class BodySizeLimitMiddleware:
             await self.app(scope, receive, send)
             return
 
+        if scope.get("path") == _RAG_UPLOAD_PATH:
+            async with RAG_UPLOAD_CONCURRENCY_SEMAPHORE:
+                await self._buffer_and_forward(scope, receive, send)
+            return
+
+        await self._buffer_and_forward(scope, receive, send)
+
+    async def _buffer_and_forward(self, scope: Scope, receive: Receive, send: Send) -> None:
         max_bytes = (
             self._fixed_max_bytes
             if self._fixed_max_bytes is not None

@@ -13,6 +13,7 @@ import asyncio
 import base64
 import csv
 import io
+import itertools
 import re
 from typing import TypeVar
 from xml.sax.saxutils import escape as xml_escape
@@ -75,8 +76,17 @@ def _sanitise(value: str, max_len: int = 200) -> str:
 
 
 def _parse_csv(text: str) -> list[dict[str, str]]:
+    # Stops one row past the limit rather than materialising every row in
+    # the file first — MAX_UPLOAD_SIZE_BYTES bounds the raw bytes, but many
+    # tiny rows can still cost meaningfully more as parsed Python dict/str
+    # objects than their byte count suggests. Same pattern as _parse_xlsx's
+    # row_limit, for the same reason: the existing `len(rows) >
+    # MAX_UPLOAD_ROWS` check in parse_upload still sees enough rows to
+    # correctly reject an oversized file instead of silently truncating it
+    # into an incomplete-looking success.
     reader = csv.DictReader(io.StringIO(text))
-    return [dict(row) for row in reader]
+    row_limit = settings.MAX_UPLOAD_ROWS + 1
+    return [dict(row) for row in itertools.islice(reader, row_limit)]
 
 
 # ─── XLSX parser ─────────────────────────────────────────────────────────────
