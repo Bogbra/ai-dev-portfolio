@@ -34,13 +34,13 @@ function CaseStudyCard({ study, index, viewCase }: { study: CaseStudy; index: nu
   return (
     <motion.div
       ref={ref}
-      initial={{ opacity: 0, y: 28 }}
-      animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 28 }}
+      initial={{ opacity: 0, y: prefersReduced ? 0 : 28 }}
+      animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: prefersReduced ? 0 : 28 }}
       whileHover={prefersReduced ? {} : { scale: 1.018 }}
       transition={{
-        duration: 0.7,
+        duration: prefersReduced ? 0 : 0.7,
         ease: easings.outExpo,
-        delay: index * 0.12,
+        delay: prefersReduced ? 0 : index * 0.12,
         scale: { duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94], delay: 0 },
       }}
       className="group relative bg-surface border border-border rounded-lg overflow-hidden transition-colors duration-300 hover:border-border-strong focus-within:border-border-strong flex flex-col"
@@ -156,6 +156,7 @@ export function SelectedWorkSection() {
   const { t } = useLang();
   const headingRef = useRef<HTMLDivElement>(null);
   const headingInView = useInView(headingRef, { once: true, margin: '-60px' });
+  const prefersReduced = useReducedMotion() ?? false;
 
   const studies: CaseStudy[] = t.work.studies.map((s, i) => ({
     ...s,
@@ -168,9 +169,9 @@ export function SelectedWorkSection() {
       <div className="max-w-[1920px] mx-auto">
         <motion.div
           ref={headingRef}
-          initial={{ opacity: 0, y: 16 }}
-          animate={headingInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 16 }}
-          transition={{ duration: 0.6, ease: easings.outExpo }}
+          initial={{ opacity: 0, y: prefersReduced ? 0 : 16 }}
+          animate={headingInView ? { opacity: 1, y: 0 } : { opacity: 0, y: prefersReduced ? 0 : 16 }}
+          transition={{ duration: prefersReduced ? 0 : 0.6, ease: easings.outExpo }}
           className="mb-20"
         >
           <p className="font-mono text-sm text-muted tracking-[0.18em] uppercase mb-4">

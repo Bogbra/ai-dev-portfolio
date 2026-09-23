@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { seoStrategyRequestSchema } from '@ai/types';
 import type { SeoStrategyResult, RankedOpportunity, RoadmapPhase } from '@ai/types';
 import { runSeoStrategy } from '@/lib/api';
@@ -223,6 +223,17 @@ export function SeoStrategyLab() {
   const [copied, setCopied] = useState(false);
   const stepTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const resultRef = useRef<HTMLDivElement>(null);
+  // runSeoStrategy can run up to ~232s — this lets a new submission cancel
+  // a still-running previous one, and unmount cancel whatever is in flight,
+  // instead of leaving an uncancellable request racing the component.
+  const abortRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    return () => {
+      abortRef.current?.abort();
+      if (stepTimerRef.current) clearInterval(stepTimerRef.current);
+    };
+  }, []);
 
   function startStepAnimation() {
     setWorkflowStep(1);
@@ -279,11 +290,22 @@ export function SeoStrategyLab() {
       return;
     }
 
+    // Cancel any still-running previous submission before starting a new one.
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
     setRunState('running');
     setResult(null);
     startStepAnimation();
 
-    const res = await runSeoStrategy(parsed.data);
+    const res = await runSeoStrategy(parsed.data, controller.signal);
+
+    if (res.ok === false && res.error === 'aborted') {
+      // Superseded by a newer submission, or the component unmounted —
+      // neither is a real failure to report.
+      return;
+    }
 
     stopStepAnimation(res.ok);
 
@@ -346,14 +368,29 @@ export function SeoStrategyLab() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <SeoField
-              label="Market / language"
-              id="seo-market"
-              name="market"
-              placeholder="e.g. English (US), German, English (UK)"
-              defaultValue="English"
-              error={fieldErrors['market']}
-            />
+            <div>
+              <label htmlFor="seo-market" className="block font-mono text-sm text-muted mb-1.5">
+                Market / language
+              </label>
+              {/* A free-text field here used to feed routes/seo.py's
+                  _is_german_market keyword heuristic directly — a market
+                  typed as e.g. "DACH region" matched no keyword and
+                  silently fell back to English output with no indication
+                  why. A closed set makes the market → output-language
+                  mapping exact instead of guessed from freeform text. */}
+              <select
+                id="seo-market"
+                name="market"
+                defaultValue="English"
+                className="w-full bg-bg border border-border rounded-md px-3 py-2.5 font-mono text-sm text-fg focus:outline-none focus:border-accent transition-colors duration-150"
+              >
+                <option value="English">English (US)</option>
+                <option value="English (UK)">English (UK)</option>
+                <option value="Germany">Germany (German)</option>
+                <option value="Austria">Austria (German)</option>
+                <option value="Switzerland">Switzerland (German)</option>
+              </select>
+            </div>
 
             <div>
               <label htmlFor="seo-goal" className="block font-mono text-sm text-muted mb-1.5">

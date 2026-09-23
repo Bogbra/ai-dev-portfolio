@@ -98,6 +98,30 @@ def test_classify_intent_handles_malformed_json():
     assert confidence == 0.5
 
 
+def test_classify_intent_treats_string_false_as_false_not_true():
+    # bool("false") is True in Python — a naive bool(...) coercion would
+    # silently flip this safety-relevant flag if the model ever returns
+    # the word "false" as a JSON string instead of a real boolean.
+    *_, handoff, _lang = _run_classify(
+        {"intent": "general_question", "safety_state": "safe", "handoff_required": "false"}
+    )
+    assert handoff is False
+
+
+def test_classify_intent_rejects_non_boolean_handoff_required():
+    *_, handoff, _lang = _run_classify(
+        {"intent": "general_question", "safety_state": "safe", "handoff_required": "yes"}
+    )
+    assert handoff is False
+
+
+def test_classify_intent_accepts_real_boolean_true_for_handoff_required():
+    *_, handoff, _lang = _run_classify(
+        {"intent": "human_handoff", "safety_state": "handoff_recommended", "handoff_required": True}
+    )
+    assert handoff is True
+
+
 # ─── Route: fail-closed when classification raises ─────────────────────────
 
 

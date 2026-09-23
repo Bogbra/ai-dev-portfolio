@@ -358,6 +358,18 @@ class PostState(TypedDict):
     revision_notes: Optional[str]
     groundedness_result: Optional[dict]
     agent_steps: Annotated[list[dict], operator.add]
+    # Populated by writer/critic/reviser when their required tool call is
+    # missing or fails CriticOutput/WriterOutput/RevisionOutput validation —
+    # each of those three nodes still returns a usable dict on failure (a
+    # LangGraph node raising would abort the whole graph, which is too
+    # blunt for e.g. a transient single-call hiccup worth degrading
+    # gracefully from), but that fallback content must not reach the
+    # caller labeled as an unqualified success. _run_live_workflow checks
+    # this after the graph completes and raises there instead — see its
+    # comment for why "done" on the per-step agent_steps entries doesn't
+    # already cover this (those track workflow progress, not per-node
+    # contract compliance).
+    contract_failures: Annotated[list[str], operator.add]
     openai_client: Any
     model: str
 
@@ -484,6 +496,7 @@ async def _writer_node(state: PostState) -> dict:
         "writer_output": output.model_dump() if output else None,
         "final_post_content": draft,
         "agent_steps": [step],
+        "contract_failures": [] if output else ["writer"],
     }
 
 
@@ -549,6 +562,7 @@ async def _critic_node(state: PostState) -> dict:
         "critic_feedback": feedback,
         "needs_revision": feedback["needsRevision"],
         "agent_steps": [step],
+        "contract_failures": [] if output else ["critic"],
     }
 
 
@@ -605,6 +619,7 @@ async def _reviser_node(state: PostState) -> dict:
         "writer_output": revised_writer_output,
         "revision_notes": changes,
         "agent_steps": [step],
+        "contract_failures": [] if output else ["reviser"],
     }
 
 
@@ -839,12 +854,31 @@ async def _run_live_workflow(
         "revision_notes": None,
         "groundedness_result": None,
         "agent_steps": [],
+        "contract_failures": [],
         "openai_client": client,
         "model": settings.AI_MODEL,
     }
 
     graph = _get_graph()
     result = await graph.ainvoke(initial_state)
+
+    # Writer/critic/reviser each fall back to plausible-looking placeholder
+    # content (never raising) when their required tool call is missing or
+    # fails schema validation — necessary so one node's hiccup doesn't
+    # abort the whole graph, but it means a broken tool contract can
+    # otherwise reach the caller as an ordinary "final_ready" result with
+    # fabricated content and no signal anything went wrong. Contradicts
+    # this project's own "no silent mock fallback on a genuine provider
+    # error" principle, and specifically undermines the MCP tool path,
+    # which is supposed to surface real execution problems as a ToolError
+    # (mcp_server.py) — this function's caller already treats any
+    # exception here as exactly that failure case, on both the HTTP route
+    # and the MCP tool.
+    contract_failures = result.get("contract_failures") or []
+    if contract_failures:
+        raise RuntimeError(
+            f"CS02 live workflow: required tool contract failed for: {', '.join(contract_failures)}"
+        )
 
     writer_output = result.get("writer_output") or {}
     final_post_content = result.get("final_post_content", "")

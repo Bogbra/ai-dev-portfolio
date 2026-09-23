@@ -15,18 +15,29 @@ type UploadedFile = {
   content: string; // base64
 };
 
+// Once a file has been indexed, the backend never needs its base64 content
+// again for the rest of the session — only the filename/size are still
+// displayed (see the "Indexed documents" list below). Keeping the full
+// base64 payload (up to MAX_FILES × MAX_FILE_SIZE_MB, ~30MB of text) alive
+// in React state for the whole Q&A session is dead weight; every
+// post-indexing stage uses this lighter type instead.
+type IndexedFileMeta = {
+  name: string;
+  size: number;
+};
+
 type WorkflowState =
   | { stage: 'idle' }
   | { stage: 'files_selected'; files: UploadedFile[] }
   | { stage: 'uploading'; files: UploadedFile[] }
-  | { stage: 'ready'; result: IndexedResult; files: UploadedFile[] }
-  | { stage: 'asking'; result: IndexedResult; files: UploadedFile[] }
-  | { stage: 'streaming'; indexResult: IndexedResult; files: UploadedFile[]; partial: string; sources: RetrievedChunk[]; confidence: string; reasoning: string; mockMode: boolean }
-  | { stage: 'answer_ready'; indexResult: IndexedResult; askResult: AnswerResult; files: UploadedFile[] }
-  | { stage: 'no_context'; indexResult: IndexedResult; files: UploadedFile[]; message: string }
+  | { stage: 'ready'; result: IndexedResult; files: IndexedFileMeta[] }
+  | { stage: 'asking'; result: IndexedResult; files: IndexedFileMeta[] }
+  | { stage: 'streaming'; indexResult: IndexedResult; files: IndexedFileMeta[]; partial: string; sources: RetrievedChunk[]; confidence: string; reasoning: string; mockMode: boolean }
+  | { stage: 'answer_ready'; indexResult: IndexedResult; askResult: AnswerResult; files: IndexedFileMeta[] }
+  | { stage: 'no_context'; indexResult: IndexedResult; files: IndexedFileMeta[]; message: string }
   | { stage: 'rate_limited' }
   | { stage: 'upload_error'; message: string }
-  | { stage: 'ask_error'; indexResult: IndexedResult; files: UploadedFile[]; message: string };
+  | { stage: 'ask_error'; indexResult: IndexedResult; files: IndexedFileMeta[]; message: string };
 
 type Stage = WorkflowState['stage'];
 
@@ -367,9 +378,11 @@ export function RagWorkflow() {
       return;
     }
 
-    // data.status === 'indexed'
+    // data.status === 'indexed' — drop base64 content now that the backend
+    // has it; only name/size are needed for the rest of the session.
     sessionIdRef.current = data.sessionId;
-    setState({ stage: 'ready', result: data, files });
+    const indexedFiles: IndexedFileMeta[] = files.map((f) => ({ name: f.name, size: f.size }));
+    setState({ stage: 'ready', result: data, files: indexedFiles });
     announce('Documents indexed. Ready for questions.');
   }, [state, announce]);
 
@@ -534,6 +547,16 @@ export function RagWorkflow() {
       // question stays as-is so user can edit and ask again
     }
   }, [state.stage]);
+
+  // handleAsk/handleReset above only abort a PREVIOUS stream when a new one
+  // starts or the user resets — neither runs if the component unmounts
+  // mid-stream (e.g. navigating away), which left the fetch running with
+  // nothing left to receive its events.
+  useEffect(() => {
+    return () => {
+      streamAbortRef.current?.abort();
+    };
+  }, []);
 
   // ── Render ─────────────────────────────────────────────────────────────────
 

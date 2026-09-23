@@ -288,9 +288,17 @@ const SEO_STRATEGY_TIMEOUT_MS = 240_000;
 
 export async function runSeoStrategy(
   payload: Omit<SeoStrategyRequest, '_honey'>,
+  externalSignal?: AbortSignal,
 ): Promise<Result<SeoStrategyResult>> {
+  // This request can run up to ~232s — long enough that the calling
+  // component needs to be able to cancel it early (unmount, or a new
+  // submission superseding an old one), same as ragAskStream's signal
+  // param above. The internal controller still owns the fixed timeout;
+  // the external signal is wired to abort it too, rather than replacing it.
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), SEO_STRATEGY_TIMEOUT_MS);
+  const onExternalAbort = () => controller.abort();
+  externalSignal?.addEventListener('abort', onExternalAbort);
   try {
     const res = await fetch(`${env.NEXT_PUBLIC_AI_URL}/seo-strategy/run`, {
       method: 'POST',
@@ -308,11 +316,12 @@ export async function runSeoStrategy(
     return parseResponse(seoStrategyResultSchema, data);
   } catch (err) {
     if (err instanceof DOMException && err.name === 'AbortError') {
-      return { ok: false, error: 'timeout' };
+      return { ok: false, error: externalSignal?.aborted ? 'aborted' : 'timeout' };
     }
     return { ok: false, error: 'Unable to connect. Please check your connection and try again.' };
   } finally {
     clearTimeout(timer);
+    externalSignal?.removeEventListener('abort', onExternalAbort);
   }
 }
 

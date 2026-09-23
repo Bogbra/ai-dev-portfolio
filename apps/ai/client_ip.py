@@ -83,19 +83,38 @@ def _is_trusted_proxy_peer(peer_host: str) -> bool:
     return any(peer in network for network in settings.get_trusted_proxy_networks())
 
 
+def _as_valid_ip(value: str) -> str | None:
+    """Returns value unchanged if it parses as an IP, else None. A header
+    value is still attacker-influenced data even once the immediate peer is
+    trusted (the trust model above establishes WHO relayed it, not that its
+    CONTENT is well-formed) — used directly as a slowapi rate-limit key, a
+    malformed value would key every request against inconsistent buckets
+    instead of a real per-visitor identity.
+    """
+    try:
+        ip_address(value)
+    except ValueError:
+        return None
+    return value
+
+
 def get_client_ip(request: Request) -> str:
     peer_host = request.client.host if request.client else None
 
     if peer_host and _is_trusted_proxy_peer(peer_host):
         real_ip = request.headers.get("x-real-ip")
-        if real_ip and real_ip.strip():
-            return real_ip.strip()
+        if real_ip:
+            validated = _as_valid_ip(real_ip.strip())
+            if validated:
+                return validated
 
         forwarded = request.headers.get("x-forwarded-for")
         if forwarded:
             entries = [entry.strip() for entry in forwarded.split(",") if entry.strip()]
             if entries:
-                return entries[-1]
+                validated = _as_valid_ip(entries[-1])
+                if validated:
+                    return validated
 
     if peer_host:
         return peer_host

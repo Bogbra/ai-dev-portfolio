@@ -439,15 +439,19 @@ async def _run_workflow(
             res_call = tc
             break
 
+    # A missing/unparseable tool call is a technical contract failure, not a
+    # legitimate "no contact matches" result — conflating the two (as this
+    # used to do by returning status: "not_found") made a broken provider
+    # response indistinguishable from the model genuinely finding nothing.
+    # Raising here lets the existing safe-error handling in run_workflow
+    # surface it as an actual error instead. Mirrors the same fix in
+    # cs02_post.py's _run_live_workflow.
     if not res_call:
-        return {
-            "status": "not_found",
-            "reason": "Unable to resolve contact. Please refine your request.",
-        }
+        raise RuntimeError("CS01 workflow: model did not call resolve_contact.")
 
     resolution_model = _parse_tool_output(ResolutionOutput, res_call.function.arguments)
     if not resolution_model:
-        return {"status": "not_found", "reason": "Unable to parse contact resolution."}
+        raise RuntimeError("CS01 workflow: resolve_contact output failed schema validation.")
     resolution = resolution_model.model_dump()
 
     if resolution["status"] == "not_found":
@@ -475,7 +479,15 @@ async def _run_workflow(
             # to the ambiguous match set.
             suggestion = next((c for c in contacts if c.id in matched_ids), None)
         if not suggestion:
-            return {"status": "not_found", "reason": "No matching contact found."}
+            # The model reported "ambiguous" (i.e. claims a match exists
+            # among the provided contacts) but every referenced ID is
+            # absent from contacts — it hallucinated an ID rather than
+            # legitimately finding nothing. Contract failure, not a
+            # "not_found" domain result.
+            raise RuntimeError(
+                "CS01 workflow: resolve_contact returned 'ambiguous' with no contact ID "
+                "matching the uploaded list."
+            )
         return {
             "status": "ambiguous",
             "options": options
@@ -494,7 +506,14 @@ async def _run_workflow(
     # exact_match → generate draft
     resolved = next((c for c in contacts if c.id == resolution.get("selected_contact_id")), None)
     if not resolved:
-        return {"status": "not_found", "reason": "Selected contact not found in uploaded data."}
+        # The model reported "exact_match" (only ONE contact matches) but
+        # selected an ID outside the provided list — a violation of the
+        # system prompt's "You may ONLY select contacts from the provided
+        # list" rule, not a genuine no-match result.
+        raise RuntimeError(
+            "CS01 workflow: resolve_contact returned 'exact_match' with a contact ID "
+            "not present in the uploaded list."
+        )
 
     draft_msg = await client.chat.completions.create(
         model=model,
@@ -530,12 +549,16 @@ async def _run_workflow(
             draft_call = tc
             break
 
+    # By this point a contact HAS been resolved — a broken generate_draft
+    # call is a technical failure of the next step, not evidence that no
+    # contact was found. Reporting it as status: "not_found" was actively
+    # misleading (a resolved contact does exist), not merely imprecise.
     if not draft_call:
-        return {"status": "not_found", "reason": "Failed to generate email draft."}
+        raise RuntimeError("CS01 workflow: model did not call generate_draft.")
 
     draft_model = _parse_tool_output(DraftOutput, draft_call.function.arguments)
     if not draft_model:
-        return {"status": "not_found", "reason": "Failed to parse email draft."}
+        raise RuntimeError("CS01 workflow: generate_draft output failed schema validation.")
     draft = draft_model.model_dump()
 
     return {

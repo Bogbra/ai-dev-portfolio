@@ -129,3 +129,25 @@ def test_trusted_range_supports_multiple_comma_separated_cidrs(monkeypatch):
     b = _make_request({"x-forwarded-for": "2.2.2.2"}, client=("203.0.113.50", 1))
     assert get_client_ip(a) == "1.1.1.1"
     assert get_client_ip(b) == "2.2.2.2"
+
+
+# ─── Header values are still validated as real IPs, trusted peer or not ────────
+# Trusting WHO relayed a header (the peer check above) says nothing about
+# whether its CONTENT is a well-formed IP — used directly as the slowapi
+# rate-limit key, a malformed value would key requests inconsistently
+# instead of against a real per-visitor identity.
+
+
+def test_trusted_peer_malformed_x_real_ip_falls_through_to_xff():
+    request = _make_request({"x-real-ip": "not-an-ip", "x-forwarded-for": "9.9.9.9"})
+    assert get_client_ip(request) == "9.9.9.9"
+
+
+def test_trusted_peer_malformed_xff_entry_falls_back_to_socket_peer():
+    request = _make_request({"x-forwarded-for": "also-not-an-ip"})
+    assert get_client_ip(request) == _TRUSTED_PEER
+
+
+def test_trusted_peer_malformed_x_real_ip_and_xff_falls_back_to_socket_peer():
+    request = _make_request({"x-real-ip": "garbage", "x-forwarded-for": "still-garbage"})
+    assert get_client_ip(request) == _TRUSTED_PEER

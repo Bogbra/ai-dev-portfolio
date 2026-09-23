@@ -4,6 +4,8 @@ import asyncio
 import json
 from unittest.mock import AsyncMock, MagicMock
 
+import pytest
+
 from routes.cs01_workflow import ParsedContact, _run_workflow
 
 
@@ -99,7 +101,11 @@ def test_ambiguous_with_valid_suggested_id_uses_it_directly():
     assert result["suggestion"]["id"] == "3"
 
 
-def test_ambiguous_with_no_matches_and_no_suggestion_returns_not_found():
+def test_ambiguous_with_no_matches_and_no_suggestion_raises_contract_error():
+    # resolve_contact claims a match exists ("ambiguous") but every
+    # referenced id is absent from the uploaded contacts — a contract
+    # violation, not a legitimate "no contact found" result. See
+    # test_cs01_workflow_contract_failure.py for the fuller rationale.
     contacts = [ParsedContact(id="1", name="Zed Unrelated", email="zed@example.com")]
     client = _client_returning(
         {
@@ -111,19 +117,18 @@ def test_ambiguous_with_no_matches_and_no_suggestion_returns_not_found():
         }
     )
 
-    result = asyncio.run(
-        _run_workflow(client, "gpt-4o-mini", contacts, "Email someone", None, None)
-    )
-
-    assert result["status"] == "not_found"
+    with pytest.raises(RuntimeError):
+        asyncio.run(_run_workflow(client, "gpt-4o-mini", contacts, "Email someone", None, None))
 
 
-def test_resolution_falls_back_safely_when_tool_output_violates_the_response_model():
+def test_resolution_raises_contract_error_when_tool_output_violates_the_response_model():
     # strict:true on the OpenAI tool schema should make this unreachable in
     # production, but this proves ResolutionOutput is a real, independent
     # second check — feeding it JSON that's valid JSON but violates the
-    # schema (missing a required field), and confirming the workflow fails
-    # closed instead of raising an uncaught pydantic.ValidationError.
+    # schema (missing a required field), and confirming the workflow raises
+    # a clean RuntimeError (surfaced as a safe 500 by run_workflow) instead
+    # of either an uncaught pydantic.ValidationError or a misleading
+    # status: "not_found". See test_cs01_workflow_contract_failure.py.
     contacts = [ParsedContact(id="1", name="Jane Doe", email="jane@example.com")]
     client = _client_returning(
         {
@@ -133,10 +138,8 @@ def test_resolution_falls_back_safely_when_tool_output_violates_the_response_mod
         }
     )
 
-    result = asyncio.run(_run_workflow(client, "gpt-4o-mini", contacts, "Email Jane", None, None))
-
-    assert result["status"] == "not_found"
-    assert result["reason"] == "Unable to parse contact resolution."
+    with pytest.raises(RuntimeError):
+        asyncio.run(_run_workflow(client, "gpt-4o-mini", contacts, "Email Jane", None, None))
 
 
 def test_resolved_contact_name_and_email_are_escaped_in_draft_call():

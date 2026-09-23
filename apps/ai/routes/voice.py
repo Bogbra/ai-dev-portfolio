@@ -231,12 +231,19 @@ async def _classify_intent(
         confidence = 0.5
     confidence = max(0.0, min(1.0, confidence))
 
+    # bool(...) would coerce ANY truthy value — including the string
+    # "false" — to True, silently flipping this safety-relevant flag.
+    # Only a real JSON boolean counts; anything else falls back to the
+    # same safe default as every other field above.
+    handoff_raw = data.get("handoff_required", False)
+    handoff_required = handoff_raw if isinstance(handoff_raw, bool) else False
+
     return (
         intent,
         safety_state,
         confidence,
         tool,
-        bool(data.get("handoff_required", False)),
+        handoff_required,
         data.get("language", "en"),
     )
 

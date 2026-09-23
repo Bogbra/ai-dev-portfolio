@@ -16,9 +16,9 @@ export function AboutSection() {
       <div className="max-w-[1920px] mx-auto">
         <motion.div
           ref={ref}
-          initial={{ opacity: 0, y: 16 }}
-          animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 16 }}
-          transition={{ duration: 0.6, ease: easings.outExpo }}
+          initial={{ opacity: 0, y: prefersReduced ? 0 : 16 }}
+          animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: prefersReduced ? 0 : 16 }}
+          transition={{ duration: prefersReduced ? 0 : 0.6, ease: easings.outExpo }}
           className="mb-12"
         >
           <p className="font-mono text-sm text-muted tracking-[0.18em] uppercase mb-4">
@@ -29,9 +29,9 @@ export function AboutSection() {
         <div className="grid grid-cols-1 xl:grid-cols-[1fr_600px] gap-10 xl:gap-14 xl:items-center">
           {/* Text */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-            transition={{ duration: 0.7, ease: easings.outExpo, delay: 0.1 }}
+            initial={{ opacity: 0, y: prefersReduced ? 0 : 20 }}
+            animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: prefersReduced ? 0 : 20 }}
+            transition={{ duration: prefersReduced ? 0 : 0.7, ease: easings.outExpo, delay: prefersReduced ? 0 : 0.1 }}
             className="md:max-w-2xl"
           >
             <h2 className="font-display text-4xl md:text-5xl font-bold text-fg tracking-tight leading-tight mb-10">
@@ -62,9 +62,9 @@ export function AboutSection() {
 
           {/* Stats panel */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-            transition={{ duration: 0.7, ease: easings.outExpo, delay: 0.25 }}
+            initial={{ opacity: 0, y: prefersReduced ? 0 : 20 }}
+            animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: prefersReduced ? 0 : 20 }}
+            transition={{ duration: prefersReduced ? 0 : 0.7, ease: easings.outExpo, delay: prefersReduced ? 0 : 0.25 }}
           >
             <motion.div
               whileHover={prefersReduced ? {} : { scale: 1.015 }}

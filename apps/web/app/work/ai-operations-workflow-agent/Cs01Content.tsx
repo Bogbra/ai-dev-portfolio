@@ -353,7 +353,7 @@ export function Cs01Content() {
   const accent = 'var(--color-fg)';
 
   return (
-    <main className="pt-32 pb-28 md:pb-40 px-8 md:px-16 lg:px-20">
+    <main id="main-content" className="pt-32 pb-28 md:pb-40 px-8 md:px-16 lg:px-20">
       <div className="max-w-[1920px] mx-auto">
 
         <CaseStudyBackLink />

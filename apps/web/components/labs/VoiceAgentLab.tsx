@@ -177,25 +177,52 @@ export function VoiceAgentLab() {
   const audioUrlRef = useRef<string | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
 
+  // In-flight requests this component owns — aborted on unmount so a
+  // response arriving after the user has navigated away never calls
+  // setState on an unmounted component, and a slow /voice/agent call
+  // doesn't keep running (and billing OpenAI) with nothing left to show it to.
+  const agentAbortRef = useRef<AbortController | null>(null);
+
   // ── Check availability on mount ──────────────────────────────────────────
   useEffect(() => {
     const aiUrl = env.NEXT_PUBLIC_AI_URL;
-    fetch(`${aiUrl}/voice/status`, { cache: 'no-store' })
+    const controller = new AbortController();
+    fetch(`${aiUrl}/voice/status`, { cache: 'no-store', signal: controller.signal })
       .then((r) => r.json())
       .then((data: { available: boolean; reason?: string }) => {
         setAvailable(data.available);
         if (!data.available) setUnavailableReason(data.reason ?? '');
       })
-      .catch(() => {
+      .catch((err: unknown) => {
+        if (err instanceof DOMException && err.name === 'AbortError') return;
         setAvailable(false);
         setUnavailableReason('Could not reach the AI service.');
       });
+    return () => controller.abort();
   }, []);
 
   // ── Cleanup on unmount ────────────────────────────────────────────────────
   useEffect(() => {
     return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+      if (mediaRecorderRef.current) {
+        // Detach handlers first — .stop() below would otherwise fire
+        // onstop and kick off processAudio() after the component is gone.
+        mediaRecorderRef.current.ondataavailable = null;
+        mediaRecorderRef.current.onstop = null;
+        if (mediaRecorderRef.current.state !== 'inactive') mediaRecorderRef.current.stop();
+      }
       if (streamRef.current) streamRef.current.getTracks().forEach((t) => t.stop());
+      agentAbortRef.current?.abort();
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.onplay = null;
+        audioRef.current.onpause = null;
+        audioRef.current.onended = null;
+      }
     };
   }, []);
 
@@ -321,6 +348,8 @@ export function VoiceAgentLab() {
               : 'webm';
 
     const aiUrl = env.NEXT_PUBLIC_AI_URL;
+    const controller = new AbortController();
+    agentAbortRef.current = controller;
 
     let data: AgentResult;
     try {
@@ -332,6 +361,7 @@ export function VoiceAgentLab() {
           filename: `recording.${ext}`,
           duration_seconds: duration,
         }),
+        signal: controller.signal,
       });
 
       if (res.status === 429) {
@@ -361,7 +391,8 @@ export function VoiceAgentLab() {
       }
 
       data = parsed.data;
-    } catch {
+    } catch (err) {
+      if (err instanceof DOMException && err.name === 'AbortError') return;
       setError('Unable to connect. Please check your connection and try again.');
       setIsProcessing(false);
       return;
