@@ -16,10 +16,10 @@ The codebase itself is the work sample: a role-specialized LangGraph workflow wi
 | **Evaluation** | A mechanical rubric (`apps/ai/evals/cs02_eval.py`), not subjective judgment — asserts the conditional-revision contract, groundedness status, and structural output checks against 6 fixed cases; wired into pytest/CI in mock mode |
 | **MCP server** | A real [Model Context Protocol](https://modelcontextprotocol.io) server (`/mcp`) — portfolio data as read-only resources, the CS02 workflow as a rate-limited live tool, callable from any MCP client or directly from the browser (see the MCP Lab) |
 | **Guardrails** | Unsafe-input filtering before any LLM call, fail-closed validation (a broken check blocks, not allows), honeypot + rate limits, and no silent fallback to mock output on a genuine provider error |
-| **Production-minded frontend** | Next.js 15 App Router, React Server Components, TypeScript strict mode, Tailwind CSS v4, Motion animations, dark/light mode, WCAG AA accessibility |
+| **Production-minded frontend** | Next.js 15 App Router, React Server Components, TypeScript strict mode, Tailwind CSS v4, Motion animations, dark/light mode, accessibility-conscious markup (semantic HTML, keyboard navigation, reduced-motion support) |
 | **Separated architecture** | Three independently deployable apps in one pnpm monorepo — Next.js (Vercel), Fastify API (Railway), FastAPI AI backend (Railway Docker) |
 | **Security** | CSP with per-request nonce, Helmet (Fastify), CORS + body-size limits (FastAPI), rate limiting, Zod/Pydantic validation on all inputs, no secrets in frontend code |
-| **Tested** | Vitest (TypeScript schemas and Fastify routes) + pytest (Python AI backend, unit and integration) + Playwright/axe-core (e2e and WCAG AA checks, including a real browser round trip against the running MCP endpoint) — all wired into GitHub Actions CI; see CI for current pass/fail status |
+| **Tested** | Vitest (TypeScript schemas and Fastify routes) + pytest (Python AI backend, unit and integration) + Playwright/axe-core (e2e smoke tests, plus an automated axe-core scan of the homepage and one case study page flagging serious/critical WCAG 2 A/AA violations — not a full conformance audit or a check of every page, and a real browser round trip against the running MCP endpoint) — all wired into GitHub Actions CI; see CI for current pass/fail status |
 
 ---
 
@@ -253,8 +253,10 @@ pnpm build      # Production build for all apps
 pnpm lint       # ESLint + TypeScript check (web, api)
 pnpm test       # Vitest — TypeScript schemas and Fastify routes
                 # Python: cd apps/ai && uv run pytest
-pnpm test:e2e   # Playwright + axe-core — smoke, WCAG AA checks, and a real
-                # MCP Lab browser round trip. apps/web builds + serves itself;
+pnpm test:e2e   # Playwright + axe-core — smoke tests, an automated axe-core
+                # scan (homepage + one case study; flags serious/critical
+                # WCAG 2 A/AA violations only, not full conformance), and a
+                # real MCP Lab browser round trip. apps/web builds + serves itself;
                 # apps/ai must already be running separately (e.g. `pnpm
                 # --filter @ai/python-ai dev`) or the MCP Lab test fails —
                 # CI starts it automatically, see .github/workflows/ci.yml
