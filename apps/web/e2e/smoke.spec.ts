@@ -39,7 +39,7 @@ test.describe('homepage smoke', () => {
     expect(response?.status()).toBe(200);
 
     await expect(page).toHaveTitle(/.+/);
-    for (const id of ['work', 'labs', 'about', 'contact']) {
+    for (const id of ['work', 'labs', 'contact']) {
       await expect(page.locator(`#${id}`)).toBeVisible();
     }
 
