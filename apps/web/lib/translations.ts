@@ -6,7 +6,6 @@ export const en = {
     home:      'Portfolio home',
     work:      'Projects',
     labs:      'Labs',
-    about:     'About',
     contact:   'Contact',
     lang:      'Change language',
     openMenu:  'Open navigation menu',
@@ -132,23 +131,6 @@ export const en = {
     ],
   },
 
-  about: {
-    label:    'About',
-    headline: 'I build agentic AI systems',
-    p1:       'I am an Agentic AI Engineer with around 3.5 years of practical experience in web development, digital product solutions, and client-facing delivery.',
-    p2:       'My current focus is agentic AI systems: Next.js on the frontend, Python/FastAPI on the backend, multi-agent workflows, RAG, structured outputs, rate limits, and deployable architecture.',
-    p3:       'I am particularly interested in how AI capabilities become reliable product workflows — understandable for users, clean in code, and scoped enough for real application contexts.',
-    ctaWork:    'View Work',
-    ctaContact: 'GitHub projects',
-    profileComment: '// profile',
-    stats: [
-      { label: 'focus',    value: 'Agentic AI Engineering' },
-      { label: 'stack',    value: 'Next.js · Python/FastAPI · LangGraph' },
-      { label: 'approach', value: 'End-to-end' },
-      { label: 'output',   value: 'Production-oriented' },
-    ],
-  },
-
   contact: {
     label:       'Contact',
     headline:    'I look forward to hearing from you.',
@@ -192,7 +174,6 @@ export const de: typeof en = {
     home:      'Portfolio Startseite',
     work:      'Projekte',
     labs:      'Labs',
-    about:     'Über mich',
     contact:   'Kontakt',
     lang:      'Sprache wechseln',
     openMenu:  'Navigationsmenü öffnen',
@@ -315,23 +296,6 @@ export const de: typeof en = {
       { stage: '03', label: 'API',           tools: ['Fastify', 'Zod', 'Rate Limits', 'CORS', 'Security Headers'] },
       { stage: '04', label: 'Deployment',    tools: ['Docker', 'Railway', 'Vercel', 'GitHub Actions', 'Mock/Live Mode'] },
       { stage: '05', label: 'AI Workflows',  tools: ['RAG', 'Embeddings', 'Retrieval', 'Structured Outputs', 'SSE Streaming', 'MCP'] },
-    ],
-  },
-
-  about: {
-    label:    'Über mich',
-    headline: 'Ich baue agentische KI-Systeme.',
-    p1:       'Ich bin Agentic AI Engineer mit rund 3,5 Jahren praktischer Erfahrung in Webentwicklung, digitalen Produktlösungen und kundenorientierter Umsetzung.',
-    p2:       'Mein aktueller Fokus liegt auf agentischen KI-Systemen: Next.js im Frontend, Python/FastAPI im Backend, Multi-Agent-Workflows, RAG, strukturierte Outputs, Rate Limits und deploybare Architektur.',
-    p3:       'Mich interessiert besonders, wie KI-Fähigkeiten zu verlässlichen Produkt-Workflows werden — verständlich für Nutzer, sauber im Code und begrenzt genug für reale Anwendungskontexte.',
-    ctaWork:    'Arbeiten ansehen',
-    ctaContact: 'GitHub-Projekte öffnen',
-    profileComment: '// profil',
-    stats: [
-      { label: 'fokus',    value: 'Agentic AI Engineering' },
-      { label: 'stack',    value: 'Next.js · Python/FastAPI · LangGraph' },
-      { label: 'ansatz',   value: 'End-to-end' },
-      { label: 'output',   value: 'Produktionsorientiert' },
     ],
   },
 

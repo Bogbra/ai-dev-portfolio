@@ -22,7 +22,6 @@ export function Nav() {
   const links = [
     { label: t.nav.work,    href: sectionHref('#work') },
     { label: t.nav.labs,    href: sectionHref('#labs') },
-    { label: t.nav.about,   href: sectionHref('#about') },
     { label: t.nav.contact, href: sectionHref('#contact') },
   ];
 
